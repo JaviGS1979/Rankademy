@@ -4,4 +4,4 @@ export { Icon } from './Icon';
 export type { IconName } from './Icon';
 export { Logo, Wordmark } from './Logo';
 export { Screen } from './Screen';
-export { Placeholder } from './Placeholder';
+export { Aviso, Card, Cargando, Chip, Iniciales, Tag } from './Ui';

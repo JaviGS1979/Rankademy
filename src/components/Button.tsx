@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, fonts, radius, touch } from '@/theme';
 
@@ -11,6 +11,8 @@ type Props = {
   small?: boolean;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  // Muestra un indicador y bloquea el botón mientras se envía
+  cargando?: boolean;
 };
 
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
@@ -21,14 +23,15 @@ const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
   ghostLight: { bg: 'transparent', fg: colors.white, border: colors.white },
 };
 
-export function Button({ label, onPress, variant = 'dark', small, style, disabled }: Props) {
+export function Button({ label, onPress, variant = 'dark', small, style, disabled, cargando }: Props) {
   const p = palette[variant];
+  const bloqueado = disabled || cargando;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: !!disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: !!bloqueado, busy: !!cargando }}
+      disabled={bloqueado}
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         onPress?.();
@@ -40,7 +43,11 @@ export function Button({ label, onPress, variant = 'dark', small, style, disable
         style,
       ]}
     >
-      <Text style={[styles.label, small && styles.labelSmall, { color: p.fg }]}>{label}</Text>
+      {cargando ? (
+        <ActivityIndicator color={p.fg} />
+      ) : (
+        <Text style={[styles.label, small && styles.labelSmall, { color: p.fg }]}>{label}</Text>
+      )}
     </Pressable>
   );
 }

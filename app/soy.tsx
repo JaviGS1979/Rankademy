@@ -14,7 +14,7 @@ type Rol = {
 };
 
 const roles: Rol[] = [
-  { icon: 'school', title: 'Director de escuela', desc: 'Crea tu escuela y comparte el código.', href: '/crear-escuela', bg: colors.ink, fg: colors.lime },
+  { icon: 'school', title: 'Director de escuela', desc: 'Crea tu escuela y comparte el código.', href: { pathname: '/registro', params: { rol: 'director' } }, bg: colors.ink, fg: colors.lime },
   { icon: 'coach', title: 'Entrenador', desc: 'Pasa lista y usa la biblioteca de ejercicios.', href: { pathname: '/registro', params: { rol: 'entrenador' } }, bg: colors.blue, fg: colors.white },
   { icon: 'home', title: 'Alumno', desc: 'Tú o tu familia: racha, avatares y posición.', href: { pathname: '/registro', params: { rol: 'alumno' } }, bg: colors.lime, fg: colors.ink },
 ];

@@ -16,6 +16,12 @@ npx expo start        # Expo Go en el móvil; pulsa "w" para web
 npx tsc --noEmit      # comprobación de tipos
 ```
 
+## Configuración
+
+Copia `.env.example` a `.env` con la URL y la clave pública de Supabase. La base de datos y el acceso por correo se configuran según `supabase/README.md`.
+
 ## Estado
 
-Fase 1: proyecto Expo, tema y flujo Arranque → Soy… → Registro. Siguiente: esquema de Supabase y RLS (Fase 2).
+- Fase 1: proyecto Expo, tema y pantallas de arranque.
+- Fase 2: esquema de Supabase, reglas de acceso (RLS) y pruebas de seguridad.
+- Fase 3: registro e inicio de sesión con código por correo, crear escuela, unirse con código, añadir hijo, Mis escuelas y aprobación de solicitudes.

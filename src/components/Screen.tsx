@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { colors, fonts, touch, type as t } from '@/theme';
 import { Icon } from './Icon';
+import { useSesion } from '@/lib/sesion';
 
 type Props = {
   children: ReactNode;
@@ -13,12 +14,16 @@ type Props = {
   subtitle?: string;
   back?: boolean;
   scroll?: boolean;
+  // Tirar hacia abajo para refrescar
+  refreshing?: boolean;
+  onRefresh?: () => void;
 };
 
 // Contenedor de pantalla: zonas seguras, teclado y cabecera con "Atrás".
 // En web limita el ancho a 480 px para que la app móvil no se estire.
-export function Screen({ children, dark, title, subtitle, back, scroll = true }: Props) {
+export function Screen({ children, dark, title, subtitle, back, scroll = true, refreshing, onRefresh }: Props) {
   const router = useRouter();
+  const { session } = useSesion();
   const bg = dark ? colors.ink : colors.bg;
   const Body = scroll ? ScrollView : View;
 
@@ -35,7 +40,9 @@ export function Screen({ children, dark, title, subtitle, back, scroll = true }:
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Atrás"
-                  onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+                  onPress={() =>
+                    router.canGoBack() ? router.back() : router.replace(session ? '/mis-escuelas' : '/')
+                  }
                   style={styles.back}
                   hitSlop={8}
                 >
@@ -57,6 +64,11 @@ export function Screen({ children, dark, title, subtitle, back, scroll = true }:
             style={styles.flex}
             contentContainerStyle={scroll ? styles.bodyContent : undefined}
             keyboardShouldPersistTaps="handled"
+            refreshControl={
+              scroll && onRefresh ? (
+                <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.blue} />
+              ) : undefined
+            }
           >
             {scroll ? children : <View style={[styles.flex, styles.bodyContent]}>{children}</View>}
           </Body>

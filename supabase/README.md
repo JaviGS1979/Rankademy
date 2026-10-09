@@ -35,3 +35,18 @@ Supabase concede por defecto acceso a las tablas nuevas de `public` a `anon` y `
 1. `alter table … enable row level security;`
 2. `revoke all on … from anon, authenticated;` y conceder solo lo necesario.
 3. Añadir sus pruebas en `tests/10_seguridad.sql` (hay una prueba que falla si alguna tabla de `public` no tiene RLS).
+
+## Acceso por correo con código (Fase 3)
+
+La app entra sin contraseña: Supabase envía un **código de 6 cifras** al correo. Por defecto Supabase envía un enlace, no un código, así que hay que cambiar dos plantillas:
+
+**Authentication → Emails → Templates**, en **Confirm signup** y en **Magic Link**, sustituye el contenido por:
+
+```html
+<h2>Tu código de Rankademy</h2>
+<p>Escribe este código en la app:</p>
+<p style="font-size:32px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
+<p>Caduca en una hora. Si no lo has pedido, ignora este correo.</p>
+```
+
+El servidor de correo incluido en Supabase es solo para pruebas: envía pocos correos por hora y únicamente a direcciones del equipo del proyecto. Antes de invitar a otras personas hay que configurar un SMTP propio (Authentication → Emails → SMTP Settings; por ejemplo Resend o Brevo).

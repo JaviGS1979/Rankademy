@@ -92,7 +92,7 @@ export default function Arranque() {
           <Button label="Empezar" variant="lime" onPress={() => router.push('/soy')} />
         </Animated.View>
         <Animated.View style={cta2Style}>
-          <Button label="Ya tengo cuenta" variant="ghostLight" onPress={() => router.push('/registro')} />
+          <Button label="Ya tengo cuenta" variant="ghostLight" onPress={() => router.push('/entrar')} />
         </Animated.View>
       </View>
     </Screen>

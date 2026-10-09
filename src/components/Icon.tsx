@@ -18,6 +18,20 @@ const icons = {
       <Path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.2.6 3.5 2.6 3.5 6" />
     </>
   ),
+  share: (
+    <>
+      <Path d="M12 3v12M7 8l5-5 5 5" />
+      <Path d="M5 13v6a2 2 0 002 2h10a2 2 0 002-2v-6" />
+    </>
+  ),
+  plus: <Path d="M12 5v14M5 12h14" />,
+  close: <Path d="M6 6l12 12M18 6L6 18" />,
+  clock: (
+    <>
+      <Circle cx="12" cy="12" r="9" />
+      <Path d="M12 7v5l3 2" />
+    </>
+  ),
   home: (
     <>
       <Path d="M3 11l9-8 9 8" />

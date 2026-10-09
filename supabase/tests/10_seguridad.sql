@@ -333,6 +333,26 @@ select t.ok('todas las tablas públicas tienen RLS', (
   select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and c.relkind='r'));
 
+-- ---------------- Consultas de la app (Fase 3: Mis escuelas) ----------------
+-- Equivalen a src/lib/api.ts: misMembresias() y solicitudesPendientes()
+select t.ok('app: el director ve su membresía con la escuela y su código',
+  t.val('dir1', $q$select e.codigo from public.membresias m join public.escuelas e on e.id = m.escuela_id
+                   where m.rol = 'director' and m.estado <> 'baja'$q$) = (select codigo from cod where esc='A'));
+select t.ok('app: el director ve el nombre de quien pide entrar (pendiente)',
+  t.val('dir1', format($q$select p.nombre from public.membresias m join public.personas p on p.id = m.persona_id
+                   where m.escuela_id = %L and m.estado = 'pendiente'$q$, (select id from cod where esc='A'))) = 'coach3');
+select t.ok('app: la familia ve la membresía de su hijo con el nombre de escuela y del hijo',
+  t.val('fam1', $q$select e.nombre || '/' || pf.nombre from public.membresias m
+                   join public.escuelas e on e.id = m.escuela_id
+                   join public.perfiles_alumno pf on pf.id = m.perfil_id$q$) = 'Escuela A/Hijo1');
+select t.ok('app: un pendiente ve el nombre de la escuela pero no su lista de miembros',
+  t.cnt('coach3', 'select 1 from public.escuelas') = 1
+  and t.cnt('coach3', 'select 1 from public.membresias') = 1);
+select t.ok('app: el entrenador ve las solicitudes de su escuela',
+  t.cnt('coach1', format($q$select 1 from public.membresias where escuela_id = %L and estado = 'pendiente'$q$, (select id from cod where esc='A'))) = 1);
+select t.ok('app: el entrenador no puede aprobarlas', not t.run('coach1', format($q$select public.resolver_membresia(%L, true)$q$,
+  (select id from public.membresias where persona_id = t.u('coach3')))));
+
 -- ---------------- Revisión (0004) ----------------
 -- Integridad de puntos
 select t.ok('no se borra una clase que ya dio puntos', not t.run('coach1',

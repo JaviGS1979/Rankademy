@@ -13,6 +13,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
+import { SesionProvider, useSesion } from '@/lib/sesion';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -26,19 +27,50 @@ export default function RootLayout() {
     Figtree_800ExtraBold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded, error]);
-
   if (!loaded && !error) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ink }}>
       <SafeAreaProvider>
-        <StatusBar style="auto" />
-        {/* Pila nativa: transiciones y gesto de volver del sistema */}
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+        <SesionProvider>
+          <StatusBar style="auto" />
+          <Navegacion />
+        </SesionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+function Navegacion() {
+  const { session, cargando } = useSesion();
+
+  // La pantalla de arranque nativa se mantiene hasta saber si hay sesión
+  useEffect(() => {
+    if (!cargando) SplashScreen.hideAsync().catch(() => {});
+  }, [cargando]);
+
+  if (cargando) return null;
+
+  // Pila nativa: transiciones y gesto de volver del sistema.
+  // Las pantallas sin permiso desaparecen de la pila al entrar o salir, así
+  // que "Atrás" nunca vuelve al registro tras iniciar sesión. El orden importa:
+  // la primera pantalla permitida es la de inicio.
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      <Stack.Protected guard={!session}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="soy" />
+        <Stack.Screen name="registro" />
+        <Stack.Screen name="entrar" />
+      </Stack.Protected>
+      <Stack.Protected guard={!!session}>
+        <Stack.Screen name="mis-escuelas" />
+        <Stack.Screen name="crear-escuela" />
+        <Stack.Screen name="anadir-escuela" />
+        <Stack.Screen name="anadir-hijo" />
+      </Stack.Protected>
+      {/* Durante el cambio de "sin sesión" a "con sesión" */}
+      <Stack.Screen name="verificar" />
+    </Stack>
   );
 }
