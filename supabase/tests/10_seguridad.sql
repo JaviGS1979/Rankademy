@@ -38,7 +38,10 @@ begin
   execute q;
   execute 'reset role';
   return true;
-exception when others then
+-- Solo se aceptan los errores esperados de una operación denegada; cualquier
+-- otro (sintaxis, columna inexistente…) hace fallar el script, para que una
+-- prueba negativa nunca pase por un error en la propia prueba.
+exception when insufficient_privilege or raise_exception or integrity_constraint_violation then
   execute 'reset role';
   return false;
 end $$;
@@ -52,7 +55,10 @@ begin
   execute 'with x as (' || q || ' returning 1) select count(*) from x' into n;
   execute 'reset role';
   return n;
-exception when others then
+-- Solo se aceptan los errores esperados de una operación denegada; cualquier
+-- otro (sintaxis, columna inexistente…) hace fallar el script, para que una
+-- prueba negativa nunca pase por un error en la propia prueba.
+exception when insufficient_privilege or raise_exception or integrity_constraint_violation then
   execute 'reset role';
   return -1;
 end $$;
@@ -78,7 +84,7 @@ begin
   execute q;
   execute 'reset role';
   return false;
-exception when others then
+exception when insufficient_privilege then
   execute 'reset role';
   return true;
 end $$;
@@ -234,11 +240,11 @@ select t.ok('fam2 no ve grupos de A', t.cnt('fam2', 'select 1 from public.grupos
 select t.ok('coach3 pendiente no ve grupos', t.cnt('coach3', 'select 1 from public.grupos') = 0);
 
 select t.ok('coach2 no crea sesión en el grupo de A', not t.run('coach2', format(
-  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('coach2'))));
+  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',%L,%L)$q$, current_date - 1, t.u('coach2'))));
 select t.ok('fam1 no crea sesiones', not t.run('fam1', format(
-  $q$insert into public.sesiones (grupo_id, fecha, creada_por) values ('20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('fam1'))));
+  $q$insert into public.sesiones (grupo_id, fecha, creada_por) values ('20000000-0000-0000-0000-000000000001',%L,%L)$q$, current_date - 1, t.u('fam1'))));
 select t.ok('coach1 crea la sesión de su grupo', t.run('coach1', format(
-  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('coach1'))));
+  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',%L,%L)$q$, current_date - 1, t.u('coach1'))));
 
 select t.ok('coach2 no pasa lista en A', not t.run('coach2', format(
   $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',%L)$q$, t.u('coach2'))));
@@ -326,6 +332,82 @@ select t.ok('anónimo sin acceso a tablas', (
 select t.ok('todas las tablas públicas tienen RLS', (
   select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace
   where n.nspname='public' and c.relkind='r'));
+
+-- ---------------- Revisión (0004) ----------------
+-- Integridad de puntos
+select t.ok('no se borra una clase que ya dio puntos', not t.run('coach1',
+  $q$delete from public.sesiones where id='30000000-0000-0000-0000-000000000001'$q$)
+  and (select count(*) from public.puntos) = 1);
+select t.ok('no se borra un grupo con clases que dieron puntos', not t.run('dir1',
+  $q$delete from public.grupos where id='20000000-0000-0000-0000-000000000001'$q$));
+select t.ok('una sesión no se mueve de grupo', not t.run('coach1',
+  $q$update public.sesiones set grupo_id = gen_random_uuid()$q$));
+select t.ok('el entrenador sí puede cancelar o cambiar la fecha', t.rows('coach1',
+  $q$update public.sesiones set estado='impartida' where id='30000000-0000-0000-0000-000000000001'$q$) = 1);
+
+-- Ventana de confirmación
+select t.ok('coach1 crea una clase futura, una antigua y una cancelada', t.run('coach1', format(
+  $q$insert into public.sesiones (id, grupo_id, fecha, estado, creada_por) values
+     ('30000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001',%L,'planificada',%L),
+     ('30000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000001',%L,'planificada',%L),
+     ('30000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000001',%L,'cancelada',%L)$q$,
+  current_date + 7, t.u('coach1'), current_date - 30, t.u('coach1'), current_date - 2, t.u('coach1')))
+  and t.run('coach1', format($q$insert into public.asistencias (sesion_id, perfil_id, marcada_por)
+     select s, '10000000-0000-0000-0000-000000000001', %L from unnest(array[
+       '30000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000003',
+       '30000000-0000-0000-0000-000000000004']::uuid[]) s$q$, t.u('coach1'))));
+select t.ok('no se confirma una clase futura', not t.run('fam1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('no se confirma pasado el plazo', not t.run('fam1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('no se confirma una clase cancelada', not t.run('fam1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('ninguna de esas dio puntos', (select count(*) from public.puntos) = 1);
+
+-- Ejercicios y longitudes
+select t.ok('no se asocia un ejercicio público a una escuela ajena', not t.run('coach1', format(
+  $q$insert into public.ejercicios (autor_id, escuela_id, titulo, jugadores_min, jugadores_max) values (%L,%L,'Ajeno',1,2)$q$,
+  t.u('coach1'), (select id from cod where esc='B'))));
+select t.ok('nombre demasiado largo rechazado', t.rows('fam1',
+  format($q$update public.personas set nombre = repeat('x', 200) where id=%L$q$, t.u('fam1'))) = -1);
+select t.ok('el nombre del registro se recorta a 80', (select length(nombre) from public.personas where id = t.u('dir1')) <= 80);
+
+-- Tras la baja, la familia deja de ver el grupo
+select t.ok('fam1 da de baja a su hijo', t.rows('fam1',
+  $q$update public.membresias set estado='baja' where perfil_id='10000000-0000-0000-0000-000000000001'$q$) = 1);
+select t.ok('tras la baja, fam1 ya no ve el grupo ni sus sesiones',
+  t.cnt('fam1', 'select 1 from public.grupos') = 0
+  and t.cnt('fam1', 'select 1 from public.sesiones') = 0);
+select t.ok('tras la baja, fam1 sigue viendo sus puntos (son suyos)', t.cnt('fam1', 'select 1 from public.puntos') = 1);
+select t.ok('fam1 no se reactiva sola', t.rows('fam1',
+  $q$update public.membresias set estado='activa' where perfil_id='10000000-0000-0000-0000-000000000001'$q$) <= 0);
+
+-- Perfil: la familia sigue sin poder cambiar la cuenta vinculada
+select t.ok('la familia no vincula otra cuenta al perfil', not t.run('fam1', format(
+  $q$update public.perfiles_alumno set persona_id=%L where nombre='Hijo1'$q$, t.u('out'))));
+
+-- Borrado de cuenta (al final: cambia los datos)
+insert into auth.users (id, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000000c1', '{"nombre":"teen"}');
+insert into public.perfiles_alumno (id, familia_id, persona_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+values ('10000000-0000-0000-0000-000000000009', t.u('fam2'), '00000000-0000-0000-0000-0000000000c1', 'Teen', 2011, 'gamer', now());
+delete from auth.users where id = '00000000-0000-0000-0000-0000000000c1';
+select t.ok('se borra la cuenta propia de un alumno; el perfil familiar sigue',
+  (select persona_id from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000009') is null);
+delete from auth.users where id = t.u('coach1');
+select t.ok('se borra la cuenta de un entrenador que pasó lista y subió ejercicios',
+  not exists (select 1 from public.personas where id = t.u('coach1'))
+  and (select count(*) from public.ejercicios where autor_id is null) = 2
+  and (select marcada_por from public.asistencias where sesion_id='30000000-0000-0000-0000-000000000001') is null
+  and (select count(*) from public.puntos) = 1);
+delete from auth.users where id = t.u('dir1');
+select t.ok('se borra la cuenta de un director; la escuela sigue',
+  (select creada_por from public.escuelas where id = (select id from cod where esc='A')) is null);
+delete from auth.users where id = t.u('fam1');
+select t.ok('se borra la cuenta de una familia y con ella los datos del menor',
+  not exists (select 1 from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001')
+  and (select count(*) from public.puntos) = 0
+  and not exists (select 1 from public.asistencias where perfil_id='10000000-0000-0000-0000-000000000001'));
 
 select case when bool_and(ok) then 'TODAS LAS PRUEBAS PASAN (' || count(*) || ')'
        else 'HAY FALLOS' end as resultado from t.res;
