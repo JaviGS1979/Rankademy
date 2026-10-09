@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Añadir alumno a la clase</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="PasarLista.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Atrás</a>
+<div class="disp h1">Añadir a<br>la clase</div>
+<div class="mut">Todos los alumnos de tu escuela.</div>
+</div>
+<div class="body" style="gap: 12px">
+<div class="field"><label for="bq" style="position: absolute; left: -9999px">Buscar alumno</label><input id="bq" type="text" placeholder="Buscar por nombre o apellidos"></div>
+<div class="col" style="gap: 8px">
+<div class="rk" style="min-height: 68px"><div class="av ink">MG</div><div class="grow"><div style="font-weight: 800">Martina García León</div><div class="mut" style="font-size: 13px">Peques de martes</div></div><a class="chip" href="PasarLista.html">Añadir</a></div>
+<div class="rk" style="min-height: 68px"><div class="av or">DP</div><div class="grow"><div style="font-weight: 800">Diego Prieto Sanz</div><div class="mut" style="font-size: 13px">Juniors del viernes</div></div><a class="chip" href="PasarLista.html">Añadir</a></div>
+<div class="rk me" style="min-height: 68px"><div class="av ink">JR</div><div class="grow"><div style="font-weight: 800">Julia Ramos Cano</div><div style="font-size: 13px">Sin horario fijo</div></div><span class="tag dk">Añadida</span></div>
+<div class="rk" style="min-height: 68px"><div class="av">PN</div><div class="grow"><div style="font-weight: 800">Pablo Navarro Gil</div><div class="mut" style="font-size: 13px">Peques de martes</div></div><a class="chip" href="PasarLista.html">Añadir</a></div>
+<div class="rk" style="min-height: 68px"><div class="av or">EV</div><div class="grow"><div style="font-weight: 800">Elena Vera Molina</div><div class="mut" style="font-size: 13px">Juniors del viernes</div></div><a class="chip" href="PasarLista.html">Añadir</a></div>
+</div>
+<a class="btn lime" href="PasarLista.html" style="margin-top: auto">Listo</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

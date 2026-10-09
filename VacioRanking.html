@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ranking vacío</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-bottom: 6px"><div class="disp h1">Ranking</div></div>
+<div class="body" style="gap: 10px; padding-top: 4px">
+<div class="seg"><a href="RankAlumnos.html">Alumnos</a><a href="RankEntrenadores.html">Entrenadores</a><a class="on" href="RankEscuelas.html">Escuelas</a></div>
+<div class="col" style="flex: 1; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 0 12px">
+<div style="display: flex; align-items: flex-end; gap: 8px" aria-hidden="true">
+<div style="width: 64px; height: 70px; border: 3px dashed #46566B; border-radius: 14px 14px 0 0"></div>
+<div style="width: 64px; height: 110px; border: 3px dashed #46566B; border-radius: 14px 14px 0 0"></div>
+<div style="width: 64px; height: 44px; border: 3px dashed #46566B; border-radius: 14px 14px 0 0"></div>
+</div>
+<div class="col" style="gap: 8px"><div class="disp h2">Aún no hay suficientes escuelas en tu zona</div><div class="mut">El ranking aparece cuando varias escuelas cercanas participan. Cuantas más, más vale estar dentro.</div></div>
+</div>
+<div class="col" style="gap: 12px">
+<a class="btn lime" href="PanelDirector.html"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v11M7 9l5-5 5 5M5 20h14"/></svg>Invitar a otra escuela</a>
+<a class="btn ghost" href="ComoSePuntua.html">Cómo se puntúa</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

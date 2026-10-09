@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cómo se puntúa</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="RankAlumnos.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Ranking</a>
+<div class="disp h1">Cómo se<br>puntúa</div>
+</div>
+<div class="body" style="gap: 12px">
+<div class="card col" style="gap: 8px">
+<div class="row" style="gap: 10px"><span class="tag lime">Alumnos</span><span class="mut" style="font-size: 13px; font-weight: 700">Desde 8 años</span></div>
+<div style="font-size: 17px; font-weight: 700">Premia la constancia.</div>
+<div class="mut" style="font-size: 15px">Puntos por cada clase a la que vas, bonus por racha y puntos al subir de nivel una skill.</div>
+</div>
+<div class="card col" style="gap: 10px">
+<div class="row" style="gap: 10px"><span class="tag">Entrenadores</span></div>
+<div class="col" style="gap: 4px"><div class="row" style="justify-content: space-between; font-weight: 700"><span>Uso de sus ejercicios</span><span class="num" style="font-size: 24px">40%</span></div><div class="bar"><i style="width: 40%"></i></div><div class="mut" style="font-size: 13px">Cuenta cuando otro entrenador lo da en clase. Vale doble si es de otra escuela.</div></div>
+<div class="col" style="gap: 4px"><div class="row" style="justify-content: space-between; font-weight: 700"><span>Constancia</span><span class="num" style="font-size: 24px">30%</span></div><div class="bar"><i style="width: 30%"></i></div></div>
+<div class="col" style="gap: 4px"><div class="row" style="justify-content: space-between; font-weight: 700"><span>Asistencia y progreso</span><span class="num" style="font-size: 24px">30%</span></div><div class="bar"><i style="width: 30%"></i></div></div>
+</div>
+<div class="card col" style="gap: 8px">
+<div class="row" style="gap: 10px"><span class="tag or">Escuelas</span></div>
+<div style="font-size: 17px; font-weight: 700">La media de sus entrenadores y alumnos.</div>
+<div class="mut" style="font-size: 15px">Necesitan un mínimo de participantes para aparecer.</div>
+</div>
+<div class="row" style="gap: 12px; padding: 4px 4px"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0"><path d="M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6z"/></svg><div class="mut" style="font-size: 14px">La lista que pasa el entrenador la ve la familia, y se revisan los patrones raros.</div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inscribir alumno</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="Personas.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Atrás</a>
+<div class="disp h1">Inscribir<br>alumno</div>
+</div>
+<div class="body" style="gap: 12px; padding-top: 8px">
+<div class="field"><label for="an">Nombre</label><input id="an" type="text" placeholder="Nombre"></div>
+<div class="field"><label for="aa">Apellidos</label><input id="aa" type="text" placeholder="Apellidos"></div>
+<div class="field"><label for="ay">Año de nacimiento</label><input id="ay" type="text" inputmode="numeric" placeholder="Ej. 2014"></div>
+<div class="col" style="gap: 8px"><div class="row"><div class="lbl grow">Grupos (día y hora)</div><span class="tag">Elige uno o varios</span></div>
+<div class="col" style="gap: 6px">
+<a class="rk" href="AltaAlumno.html" role="checkbox" aria-checked="true" style="min-height: 52px; text-decoration: none; background: #0F1D2E; border-color: #0F1D2E; color: #fff"><span style="width: 28px; height: 28px; border-radius: 8px; flex: none; display: grid; place-items: center; background: #C8E63A; color: #0F1D2E"><svg class="ico" viewBox="0 0 24 24" style="width: 20px; height: 20px; stroke-width: 3.5"><path d="M4 12l5 5L20 6"/></svg></span><div class="grow"><div style="font-weight: 800">Los Tigres</div></div><div style="font-size: 13px; color: #B6C2D0; font-weight: 700">Lun 17:00</div></a>
+<a class="rk" href="AltaAlumno.html" role="checkbox" aria-checked="false" style="min-height: 52px; text-decoration: none; color: inherit"><span style="width: 28px; height: 28px; border-radius: 8px; flex: none; display: grid; place-items: center; border: 2px solid #B6C2D0; background: #fff"></span><div class="grow"><div style="font-weight: 800">Peques del lunes</div></div><div style="font-size: 13px; color: #46566B; font-weight: 700">Lun 18:00</div></a>
+<a class="rk" href="AltaAlumno.html" role="checkbox" aria-checked="true" style="min-height: 52px; text-decoration: none; background: #0F1D2E; border-color: #0F1D2E; color: #fff"><span style="width: 28px; height: 28px; border-radius: 8px; flex: none; display: grid; place-items: center; background: #C8E63A; color: #0F1D2E"><svg class="ico" viewBox="0 0 24 24" style="width: 20px; height: 20px; stroke-width: 3.5"><path d="M4 12l5 5L20 6"/></svg></span><div class="grow"><div style="font-weight: 800">Tigres del miércoles</div></div><div style="font-size: 13px; color: #B6C2D0; font-weight: 700">Mié 17:00</div></a>
+<a class="rk" href="AltaAlumno.html" role="checkbox" aria-checked="true" style="min-height: 52px; text-decoration: none; background: #0F1D2E; border-color: #0F1D2E; color: #fff"><span style="width: 28px; height: 28px; border-radius: 8px; flex: none; display: grid; place-items: center; background: #C8E63A; color: #0F1D2E"><svg class="ico" viewBox="0 0 24 24" style="width: 20px; height: 20px; stroke-width: 3.5"><path d="M4 12l5 5L20 6"/></svg></span><div class="grow"><div style="font-weight: 800">Juniors del viernes</div></div><div style="font-size: 13px; color: #B6C2D0; font-weight: 700">Vie 19:00</div></a>
+</div><div class="row" style="gap: 8px"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0; flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg><div style="font-size: 14px; font-weight: 700">3 días a la semana · 3 grupos</div></div></div>
+<a class="btn lime" href="Personas.html" style="margin-top: auto">Inscribir</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

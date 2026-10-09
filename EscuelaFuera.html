@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Escuela fuera del ranking</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-bottom: 6px"><div class="disp h1">Ranking</div></div>
+<div class="body" style="gap: 16px; padding-top: 4px">
+<div class="col" style="flex: 1; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 0 12px">
+<div style="width: 112px; height: 112px; border-radius: 50%; background: #0F1D2E; color: #C8E63A; display: grid; place-items: center"><svg class="ico xl" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H3v2a4 4 0 004 4M17 6h4v2a4 4 0 01-4 4M12 14v4M8 21h8M10 18h4"/></svg></div>
+<div class="col" style="gap: 8px"><div class="disp h2">Tu escuela no participa en el ranking</div><div class="mut">Seguís con las clases, la lista y la biblioteca de ejercicios. Solo los rankings están desactivados.</div></div>
+</div>
+<div class="card row" style="gap: 12px"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.600-7 8-7s8 3 8 7"/></svg><div style="font-size: 15px">¿Quieres competir? Pide al director de tu escuela que lo active.</div></div>
+<a class="btn ghost" href="RankingToggle.html">Soy el director: activar</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

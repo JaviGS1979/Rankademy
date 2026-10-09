@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Resumen tras la clase</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+@keyframes pop7_30{0%{opacity:0;transform:scale(.4)}4.29%{opacity:0;transform:scale(.4)}9.29%{opacity:1;transform:scale(1.15)}11.43%{opacity:1;transform:scale(1)}96%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.4)}}
+@keyframes up7_70{0%{opacity:0;transform:translateY(16px)}10.00%{opacity:0;transform:translateY(16px)}18.57%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateY(16px)}}
+@keyframes up7_95{0%{opacity:0;transform:translateY(16px)}13.57%{opacity:0;transform:translateY(16px)}22.14%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateY(16px)}}
+@keyframes up7_120{0%{opacity:0;transform:translateY(16px)}17.14%{opacity:0;transform:translateY(16px)}25.71%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateY(16px)}}
+@keyframes rkball{0%,100%{transform:translateY(0) scaleY(1)}12%{transform:translateY(0) scaleY(.88)}45%{transform:translateY(-22px) scaleY(1.05)}70%{transform:translateY(0) scaleY(1)}}
+@keyframes flick{0%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12,1.2) rotate(3deg)}100%{transform:scale(.96,1.05) rotate(-2deg)}}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+@keyframes bpulse{0%{box-shadow:0 0 0 0 rgba(194,65,12,.5)}100%{box-shadow:0 0 0 12px rgba(194,65,12,0)}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(36,70,240,.5)}100%{box-shadow:0 0 0 12px rgba(36,70,240,0)}}
+@keyframes wig{0%,12%,100%{transform:rotate(0)}2%{transform:rotate(-14deg)}4%{transform:rotate(12deg)}6%{transform:rotate(-8deg)}8%{transform:rotate(6deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,230,58,0)}50%{box-shadow:0 0 28px 4px rgba(200,230,58,.45)}}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(900px) rotate(600deg);opacity:1}}
+@keyframes fill7{0%,16%{width:0}30%,96%{width:76%}100%{width:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div class="s dark" style="padding: 48px 24px 28px; gap: 20px; position: relative; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; inset: 0; overflow: hidden; pointer-events: none"><i style="position: absolute; top: 0; left: 32%; width: 9px; height: 10px; background: #C8E63A; border-radius: 50%; animation: fall 3.9s linear -3.6s infinite"></i><i style="position: absolute; top: 0; left: 13%; width: 8px; height: 14px; background: #2446F0; border-radius: 2px; animation: fall 3.3s linear -2.0s infinite"></i><i style="position: absolute; top: 0; left: 9%; width: 8px; height: 14px; background: #FF8A5B; border-radius: 2px; animation: fall 3.7s linear -2.7s infinite"></i><i style="position: absolute; top: 0; left: 24%; width: 6px; height: 12px; background: #fff; border-radius: 50%; animation: fall 5.0s linear -1.3s infinite"></i><i style="position: absolute; top: 0; left: 84%; width: 7px; height: 8px; background: #C8E63A; border-radius: 2px; animation: fall 5.0s linear -4.0s infinite"></i><i style="position: absolute; top: 0; left: 41%; width: 12px; height: 18px; background: #2446F0; border-radius: 2px; animation: fall 3.8s linear -4.3s infinite"></i><i style="position: absolute; top: 0; left: 49%; width: 11px; height: 14px; background: #FF8A5B; border-radius: 50%; animation: fall 3.4s linear -3.0s infinite"></i><i style="position: absolute; top: 0; left: 66%; width: 8px; height: 8px; background: #fff; border-radius: 2px; animation: fall 3.7s linear -1.2s infinite"></i><i style="position: absolute; top: 0; left: 72%; width: 8px; height: 12px; background: #C8E63A; border-radius: 2px; animation: fall 5.0s linear -0.0s infinite"></i><i style="position: absolute; top: 0; left: 92%; width: 10px; height: 11px; background: #2446F0; border-radius: 50%; animation: fall 5.1s linear -4.2s infinite"></i><i style="position: absolute; top: 0; left: 54%; width: 9px; height: 10px; background: #FF8A5B; border-radius: 2px; animation: fall 4.1s linear -1.4s infinite"></i><i style="position: absolute; top: 0; left: 31%; width: 6px; height: 6px; background: #fff; border-radius: 2px; animation: fall 3.9s linear -4.1s infinite"></i><i style="position: absolute; top: 0; left: 7%; width: 10px; height: 14px; background: #C8E63A; border-radius: 50%; animation: fall 4.2s linear -5.0s infinite"></i><i style="position: absolute; top: 0; left: 84%; width: 11px; height: 12px; background: #2446F0; border-radius: 2px; animation: fall 4.2s linear -1.7s infinite"></i><i style="position: absolute; top: 0; left: 10%; width: 11px; height: 14px; background: #FF8A5B; border-radius: 2px; animation: fall 4.1s linear -1.0s infinite"></i><i style="position: absolute; top: 0; left: 37%; width: 10px; height: 12px; background: #fff; border-radius: 50%; animation: fall 3.6s linear -2.2s infinite"></i><i style="position: absolute; top: 0; left: 83%; width: 6px; height: 12px; background: #C8E63A; border-radius: 2px; animation: fall 4.4s linear -4.5s infinite"></i><i style="position: absolute; top: 0; left: 9%; width: 10px; height: 14px; background: #2446F0; border-radius: 2px; animation: fall 4.8s linear -1.4s infinite"></i></div>
+
+<div class="col" style="gap: 4px">
+<div class="lbl" style="color: #C8E63A">Asistencia confirmada</div>
+<div class="disp h1">¡Buen<br>trabajo, Hugo!</div>
+</div>
+<div style="animation: pop7_30 7s ease-out infinite both; background: #C8E63A; color: #0F1D2E; border-radius: 28px; padding: 22px 24px; display: flex; align-items: center; gap: 16px">
+<div class="num" style="font-size: 96px">+120</div>
+<div style="font-weight: 800; font-size: 22px; line-height: 1.1">XP<br>ganados</div>
+</div>
+<div class="col" style="gap: 12px">
+<div class="row" style="animation: up7_70 7s ease-out infinite both; background: #16283D; border-radius: 18px; padding: 14px 16px; gap: 14px"><svg class="ico lg" viewBox="0 0 24 24" style="transform-origin: 50% 90%; animation: flick .9s ease-in-out infinite alternate; color: #FF8A5B"><path d="M12 3c1 4 5 5.500 5 11a5 5 0 01-10 0c0-2 1-3.500 2-4.500.3 1.500 1 2 2 2.200C10.500 8.500 11 5.500 12 3z"/></svg><div class="grow"><div style="font-weight: 800">Racha: 13 días</div><div style="font-size: 14px; color: #B6C2D0">¡Un día más!</div></div></div>
+<div class="row" style="animation: up7_95 7s ease-out infinite both; background: #16283D; border-radius: 18px; padding: 14px 16px; gap: 14px"><svg class="ico lg" viewBox="0 0 24 24" style="color: #C8E63A"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><div class="grow"><div style="font-weight: 800">Derecha sube de nivel</div><div style="font-size: 14px; color: #B6C2D0">3 → 4</div></div><span class="tag lime">Nuevo</span></div>
+<div class="col" style="animation: up7_120 7s ease-out infinite both; background: #16283D; border-radius: 18px; padding: 14px 16px; gap: 10px"><div class="row" style="justify-content: space-between; font-weight: 800"><span>Nivel 4</span><span>760 / 1000 XP</span></div><div class="bar" style="height: 12px"><i style="width: 76%; animation: fill7 7s ease-out infinite both"></i></div></div>
+</div>
+<div class="col" style="margin-top: auto; gap: 12px">
+<a class="btn lime" href="InicioGamer.html">Seguir</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Modo pista</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s dark" style="padding: 20px 16px 20px; gap: 14px">
+<div class="row">
+<a class="back" href="DetalleEjercicio.html" aria-label="Cerrar modo pista" style="color: #fff; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: #16283D; margin: 0"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+<div class="disp h3 grow" style="text-align: center">Cruzado y paralelo</div>
+<span class="tag lime" style="height: 32px">Sin conexión</span>
+</div>
+<div style="position: relative; aspect-ratio: 240/140; background: #2446F0; border-radius: 20px; overflow: hidden; flex: none"><img src="../assets/court.svg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%"><svg viewBox="0 0 240 140" role="img" aria-label="Dibujo del ejercicio, imagen 1 de 3" style="position: absolute; inset: 0; width: 100%; height: 100%"><path d="M38 98C90 90 150 62 200 44" stroke="#C8E63A" stroke-width="3" fill="none" stroke-dasharray="6 5"/><circle cx="30" cy="100" r="7" fill="#C8E63A"/><circle cx="208" cy="42" r="6" fill="#fff"/></svg><span class="tag dk" style="position: absolute; right: 10px; top: 10px; height: 30px; font-size: 14px">1 / 3</span></div>
+<div class="col" style="gap: 14px; flex: 1; justify-content: center">
+<div class="step" style="gap: 16px"><div class="n" style="width: 56px; height: 56px; font-size: 34px; background: #C8E63A; color: #0F1D2E">1</div><div class="disp" style="font-size: 44px">Cruzado<br>5 pelotas</div></div>
+<div class="step" style="gap: 16px; opacity: .55"><div class="n" style="width: 56px; height: 56px; font-size: 34px; background: #2B3C52; color: #fff">2</div><div class="disp" style="font-size: 36px">Cambio: paralelo</div></div>
+<div class="step" style="gap: 16px; opacity: .55"><div class="n" style="width: 56px; height: 56px; font-size: 34px; background: #2B3C52; color: #fff">3</div><div class="disp" style="font-size: 36px">Punto con premio</div></div>
+</div>
+<div class="row" style="gap: 12px">
+<a class="btn ghost" href="ModoPista.html" aria-label="Paso anterior" style="width: 96px; min-height: 84px; border-radius: 24px; flex: none"><svg class="ico lg" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+<a class="btn lime grow" href="ModoPista.html" style="min-height: 84px; border-radius: 24px; font-size: 28px; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 800">Siguiente<svg class="ico lg" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

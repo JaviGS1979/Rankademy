@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Panel del director</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd">
+<div class="lbl">Panel del director</div>
+<div class="row" style="gap: 14px">
+<div style="width: 64px; height: 64px; border-radius: 18px; background: #0F1D2E; color: #C8E63A; display: grid; place-items: center; flex: none" role="img" aria-label="Logo de la escuela"><span class="num" style="font-size: 34px">EM</span></div>
+<div class="grow"><div class="disp h2">Escuela Marismas</div><div class="mut">Huelva</div></div>
+</div>
+</div>
+<div class="body">
+<div class="dk col" style="gap: 14px">
+<div class="lbl" style="color: #B6C2D0">Código de tu escuela</div>
+<div class="num" style="font-size: 56px; letter-spacing: .1em; color: #C8E63A">A7K-29Q</div>
+<a class="btn lime" href="PanelDirector.html" style="min-height: 52px"><svg class="ico" viewBox="0 0 24 24"><path d="M12 4v11M7 9l5-5 5 5M5 20h14"/></svg>Compartir código</a>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div class="tile"><div class="num" style="font-size: 48px">6</div><div class="mut" style="font-weight: 700">Entrenadores</div></div>
+<div class="tile"><div class="num" style="font-size: 48px">84</div><div class="mut" style="font-weight: 700">Alumnos</div></div>
+</div>
+<a class="card row" href="RankEscuelas.html" style="text-decoration: none; color: inherit; min-height: 84px; gap: 16px">
+<div style="width: 56px; height: 56px; border-radius: 16px; background: #C8E63A; display: grid; place-items: center"><span class="num" style="font-size: 32px">3º</span></div>
+<div class="grow"><div style="font-weight: 800; font-size: 18px">Posición de tu escuela</div><div class="mut" style="font-size: 14px">Ranking provincial</div></div>
+<svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+</a>
+</div>
+<div class="tabs">
+<a class="tab on" href="PanelDirector.html"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Panel</a>
+<a class="tab" href="Personas.html"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.2.6 3.5 2.6 3.5 6"/></svg>Personas</a>
+<a class="tab" href="RankingToggle.html"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H3v2a4 4 0 004 4M17 6h4v2a4 4 0 01-4 4M12 14v4M8 21h8M10 18h4"/></svg>Ranking</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

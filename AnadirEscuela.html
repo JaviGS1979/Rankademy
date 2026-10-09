@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Añadir otra escuela</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="MisEscuelas.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Atrás</a>
+<div class="disp h1">Añadir otra<br>escuela</div>
+</div>
+<div class="body" style="gap: 16px; padding-top: 12px">
+<div class="field"><label for="ce">Código de la escuela</label><input id="ce" type="text" placeholder="Ej. A7K-29Q" style="text-transform: uppercase; letter-spacing: .1em"></div>
+<div class="col" style="gap: 10px">
+<div class="step"><div class="n">1</div><div style="font-weight: 700">Escribe el código que te da la dirección</div></div><div class="step"><div class="n">2</div><div style="font-weight: 700">El director aprueba tu acceso</div></div><div class="step"><div class="n">3</div><div style="font-weight: 700">La escuela aparece en Mis escuelas</div></div>
+</div>
+<div class="card row" style="gap: 12px; padding: 12px 14px"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0; flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg><div class="mut" style="font-size: 14px">Seguirás en tus otras escuelas. Si coinciden dos clases a la misma hora, te avisamos.</div></div>
+<a class="btn lime" href="MisEscuelas.html" style="margin-top: auto; flex: none">Pedir acceso</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mis escuelas</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="InicioEntrenador.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Atrás</a>
+<div class="disp h1">Mis escuelas</div>
+<div class="mut">Una cuenta, varias escuelas.</div>
+</div>
+<div class="body" style="gap: 10px; padding-top: 8px">
+<a class="card row" href="InicioEntrenador.html" style="text-decoration: none; background: #0F1D2E; border-color: #0F1D2E; color: #fff; gap: 14px; min-height: 84px"><div class="av lime" style="border-radius: 12px; width: 48px; height: 48px">EM</div><div class="grow"><div style="font-weight: 800; font-size: 17px">Escuela Marismas</div><div style="font-size: 13px; color: #B6C2D0">Huelva · 3 grupos</div></div><div class="col" style="gap: 4px; align-items: flex-end"><span class="tag lime">Entrenador</span><span style="font-size: 12px; font-weight: 800; color: #C8E63A">Activa</span></div></a>
+<a class="card row" href="InicioEntrenador.html" style="text-decoration: none; color: inherit; gap: 14px; min-height: 84px"><div class="av ink" style="border-radius: 12px; width: 48px; height: 48px">EO</div><div class="grow"><div style="font-weight: 800; font-size: 17px">Escuela Olivar</div><div class="mut" style="font-size: 13px">Huelva · 2 grupos</div></div><span class="tag">Entrenador</span><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></a>
+<div class="card row" style="gap: 14px; min-height: 84px; border-style: dashed"><div class="av or" style="border-radius: 12px; width: 48px; height: 48px">EC</div><div class="grow"><div style="font-weight: 800; font-size: 17px">Escuela Costa</div><div class="mut" style="font-size: 13px">Esperando al director</div></div><span class="tag or">Pendiente</span></div>
+<a class="btn ghost" href="AnadirEscuela.html" style="min-height: 52px; flex: none"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Añadir otra escuela</a>
+<div class="card col" style="gap: 12px; padding: 14px 16px; margin-top: auto">
+<div class="lbl">Cómo cuentan tus puntos</div>
+<div class="row" style="gap: 12px; align-items: flex-start"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0; flex: none"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div style="font-size: 14px; font-weight: 600">Cada escuela suma solo las clases que haces en ella.</div></div><div class="row" style="gap: 12px; align-items: flex-start"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0; flex: none"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M12 14v4M8 21h8M10 18h4"/></svg><div style="font-size: 14px; font-weight: 600">En provincia, comunidad y país apareces una sola vez, con tu total.</div></div><div class="row" style="gap: 12px; align-items: flex-start"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0; flex: none"><path d="M12 3c1 4 5 5.500 5 11a5 5 0 01-10 0c0-2 1-3.500 2-4.500.3 1.500 1 2 2 2.200C10.500 8.500 11 5.500 12 3z"/></svg><div style="font-size: 14px; font-weight: 600">Tu racha, avatares y logros te siguen a todas.</div></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

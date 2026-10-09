@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio Gamer</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+@keyframes pop8_30{0%{opacity:0;transform:scale(.4)}3.75%{opacity:0;transform:scale(.4)}8.12%{opacity:1;transform:scale(1.15)}10.00%{opacity:1;transform:scale(1)}96%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.4)}}
+@keyframes pop8_55{0%{opacity:0;transform:scale(.4)}6.88%{opacity:0;transform:scale(.4)}11.25%{opacity:1;transform:scale(1.15)}13.12%{opacity:1;transform:scale(1)}96%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.4)}}
+@keyframes pop8_80{0%{opacity:0;transform:scale(.4)}10.00%{opacity:0;transform:scale(.4)}14.38%{opacity:1;transform:scale(1.15)}16.25%{opacity:1;transform:scale(1)}96%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.4)}}
+@keyframes pop8_105{0%{opacity:0;transform:scale(.4)}13.12%{opacity:0;transform:scale(.4)}17.50%{opacity:1;transform:scale(1.15)}19.38%{opacity:1;transform:scale(1)}96%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.4)}}
+@keyframes up8_130{0%{opacity:0;transform:translateY(16px)}16.25%{opacity:0;transform:translateY(16px)}23.75%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateY(16px)}}
+@keyframes rkball{0%,100%{transform:translateY(0) scaleY(1)}12%{transform:translateY(0) scaleY(.88)}45%{transform:translateY(-22px) scaleY(1.05)}70%{transform:translateY(0) scaleY(1)}}
+@keyframes flick{0%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12,1.2) rotate(3deg)}100%{transform:scale(.96,1.05) rotate(-2deg)}}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+@keyframes bpulse{0%{box-shadow:0 0 0 0 rgba(194,65,12,.5)}100%{box-shadow:0 0 0 12px rgba(194,65,12,0)}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(36,70,240,.5)}100%{box-shadow:0 0 0 12px rgba(36,70,240,0)}}
+@keyframes wig{0%,12%,100%{transform:rotate(0)}2%{transform:rotate(-14deg)}4%{transform:rotate(12deg)}6%{transform:rotate(-8deg)}8%{transform:rotate(6deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,230,58,0)}50%{box-shadow:0 0 28px 4px rgba(200,230,58,.45)}}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(900px) rotate(600deg);opacity:1}}
+@keyframes fill7{0%,16%{width:0}30%,96%{width:76%}100%{width:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div class="s">
+<div style="flex: 1; min-height: 0; overflow-y: auto">
+<div style="position: relative; height: 600px; background: #A65F3A; overflow: hidden">
+<img src="../assets/avatars/hero-01.jpg" alt="Tu avatar" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; transform-origin: 50% 35%; animation: kb 9s ease-in-out infinite alternate">
+<div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,29,46,.6) 0, rgba(15,29,46,0) 24%, rgba(15,29,46,0) 58%, rgba(15,29,46,.82) 100%)"></div>
+<div class="row" style="position: absolute; left: 20px; right: 16px; top: 24px; gap: 12px"><div class="grow"><div class="lbl" style="color: #C8E63A">Nivel 4</div><div class="disp h1" style="color: #fff">Sara</div></div><a href="SelectorPerfil.html" aria-label="Cambiar de perfil" style="width: 48px; height: 48px; border-radius: 50%; background: #fff; display: grid; place-items: center; color: #0F1D2E"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.600-7 8-7s8 3 8 7"/></svg></a></div>
+<div style="animation: pop8_30 8s ease-out infinite both; position: absolute; width: 76px; height: 76px; box-sizing: border-box; border-radius: 20px; background: rgba(15,29,46,.86); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; padding: 6px; left: 12px; top: 150px"><div class="num" style="font-size: 34px; color: #C8E63A">4</div><div style="font-size: 12px; font-weight: 700">Nivel</div></div>
+<div style="animation: pop8_55 8s ease-out infinite both; position: absolute; width: 76px; height: 76px; box-sizing: border-box; border-radius: 20px; background: rgba(15,29,46,.86); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; padding: 6px; left: 12px; top: 226px"><svg class="ico" viewBox="0 0 24 24" style="width: 26px; height: 26px; transform-origin: 50% 90%; animation: flick .9s ease-in-out infinite alternate; color: #FF8A4C; fill: #FF8A4C"><path d="M12 3c1 4 5 5.500 5 11a5 5 0 01-10 0c0-2 1-3.500 2-4.500.3 1.500 1 2 2 2.200C10.500 8.500 11 5.500 12 3z"/></svg><div class="num" style="font-size: 30px">12</div><div style="font-size: 12px; font-weight: 700">días</div></div>
+<a href="RankAlumnos.html" aria-label="Mi posición, número 12" style="animation: pop8_80 8s ease-out infinite both; position: absolute; width: 76px; height: 76px; box-sizing: border-box; border-radius: 20px; background: rgba(15,29,46,.86); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; padding: 6px; right: 12px; top: 150px; background: #C8E63A; color: #0F1D2E"><div class="num" style="font-size: 34px">#12</div><div style="font-size: 12px; font-weight: 800">Posición</div></a>
+<a href="Avatares.html" aria-label="Avatares" style="animation: pop8_105 8s ease-out infinite both; position: absolute; width: 76px; height: 76px; box-sizing: border-box; border-radius: 20px; background: rgba(15,29,46,.86); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; padding: 6px; right: 12px; top: 226px"><svg class="ico lg" viewBox="0 0 24 24" style="color: #C8E63A"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.600-7 8-7s8 3 8 7"/></svg><div style="font-size: 12px; font-weight: 700">Avatares</div></a>
+<div style="animation: up8_130 8s ease-out infinite both; position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; flex-direction: column; gap: 8px; color: #fff">
+<div class="row"><div class="grow"><div class="lbl" style="color: #B6C2D0">Próxima clase · Los Tigres</div><div class="num" style="font-size: 40px">Hoy 17:00</div></div><span class="tag lime">Pista 3</span></div>
+<div class="bar" style="height: 10px"><i style="width: 64%"></i></div>
+<div class="row" style="font-size: 13px; color: #B6C2D0; font-weight: 700; justify-content: space-between"><span>640 XP</span><span>Nivel 5: 1000 XP</span></div>
+<svg class="ico" viewBox="0 0 24 24" style="align-self: center; width: 22px; height: 22px; color: #fff" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+</div>
+</div>
+<div class="body" style="gap: 12px; padding-top: 12px; flex: none">
+<div class="card col" style="gap: 10px; border: 2px solid #C2410C; animation: bpulse 1.8s ease-out infinite"><div class="row"><div class="grow"><div style="font-weight: 800">Confirma tu asistencia</div><div class="mut" style="font-size: 14px">Clase de ayer · 17:00 · Lucía M.</div></div><span class="tag or">Pendiente</span></div><a class="btn lime sm" href="ResumenClase.html">Sí, estuve en clase</a></div>
+<a class="card row" href="RankAlumnos.html" style="text-decoration: none; color: inherit; background: #C8E63A; border-color: #C8E63A; min-height: 96px; gap: 16px"><div class="num" style="font-size: 56px">#12</div><div class="grow"><div style="font-weight: 800; font-size: 18px">Mi posición</div><div style="font-size: 14px">de 48 jugadores de tu zona</div></div><svg class="ico" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></a>
+<div class="card col" style="gap: 8px"><div class="lbl">Mis clases</div><div class="row" style="justify-content: space-between"><span style="font-weight: 800">Los Tigres</span><span class="mut">Lunes · 17:00</span></div><div class="row" style="justify-content: space-between"><span style="font-weight: 800">Tigres del miércoles</span><span class="mut">Miércoles · 17:00</span></div></div>
+</div>
+</div>
+<div class="tabs">
+<a class="tab on" href="InicioGamer.html"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Inicio</a>
+<a class="tab" href="Progreso.html"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progreso</a>
+<a class="tab" href="RankAlumnos.html"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H3v2a4 4 0 004 4M17 6h4v2a4 4 0 01-4 4M12 14v4M8 21h8M10 18h4"/></svg>Ranking</a>
+<a class="tab" href="MisEjercicios.html"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>Ejercicios</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

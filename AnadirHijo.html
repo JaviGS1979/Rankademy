@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Añadir hijo</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-top: 20px">
+<a class="back" href="SelectorPerfil.html"><svg class="ico" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Atrás</a>
+<div class="disp h1">Añadir<br>un hijo</div>
+<div class="mut">Solo pedimos lo mínimo.</div>
+</div>
+<div class="body" style="gap: 18px; padding-top: 12px">
+<div class="field"><label for="hn">Nombre</label><input id="hn" type="text" placeholder="Nombre o alias"></div>
+<div class="field"><label for="hy">Año de nacimiento</label><input id="hy" type="text" inputmode="numeric" placeholder="Ej. 2015"></div>
+<div class="card row" style="background: #E4E9FF; border-color: #E4E9FF; gap: 12px">
+<svg class="ico" viewBox="0 0 24 24" style="color: #2446F0"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.5"/></svg>
+<div style="font-size: 15px">Según la edad se crea el perfil <b>Mini</b> (3-7), <b>Gamer</b> (8-13) o <b>Junior</b> (14-17).</div>
+</div>
+<div class="card row" style="align-items: flex-start; gap: 14px">
+<div style="width: 28px; height: 28px; border-radius: 8px; background: #0F1D2E; color: #C8E63A; display: grid; place-items: center; flex: none"><svg class="ico" viewBox="0 0 24 24" style="width: 18px; height: 18px; stroke-width: 3"><path d="M4 12l5 5L20 6"/></svg></div>
+<div style="font-size: 15px">Soy el adulto responsable y acepto el consentimiento para crear este perfil de menor. <b style="text-decoration: underline">Leer texto</b></div>
+</div>
+<div class="col" style="margin-top: auto; gap: 12px">
+<a class="btn lime" href="SelectorPerfil.html">Añadir hijo</a>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

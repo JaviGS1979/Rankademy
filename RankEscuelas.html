@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ranking de escuelas</title>
+<link rel="stylesheet" href="../assets/rankademy.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Figtree:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}
+@keyframes slide8_15{0%{opacity:0;transform:translateX(40px)}1.88%{opacity:0;transform:translateX(40px)}8.12%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes slide8_27{0%{opacity:0;transform:translateX(40px)}3.38%{opacity:0;transform:translateX(40px)}9.62%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes slide8_39{0%{opacity:0;transform:translateX(40px)}4.88%{opacity:0;transform:translateX(40px)}11.12%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes slide8_51{0%{opacity:0;transform:translateX(40px)}6.38%{opacity:0;transform:translateX(40px)}12.62%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes slide8_63{0%{opacity:0;transform:translateX(40px)}7.88%{opacity:0;transform:translateX(40px)}14.12%{opacity:1;transform:none}96%{opacity:1;transform:none}100%{opacity:0;transform:translateX(40px)}}
+@keyframes rkball{0%,100%{transform:translateY(0) scaleY(1)}12%{transform:translateY(0) scaleY(.88)}45%{transform:translateY(-22px) scaleY(1.05)}70%{transform:translateY(0) scaleY(1)}}
+@keyframes flick{0%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.12,1.2) rotate(3deg)}100%{transform:scale(.96,1.05) rotate(-2deg)}}
+@keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+@keyframes bpulse{0%{box-shadow:0 0 0 0 rgba(194,65,12,.5)}100%{box-shadow:0 0 0 12px rgba(194,65,12,0)}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(36,70,240,.5)}100%{box-shadow:0 0 0 12px rgba(36,70,240,0)}}
+@keyframes wig{0%,12%,100%{transform:rotate(0)}2%{transform:rotate(-14deg)}4%{transform:rotate(12deg)}6%{transform:rotate(-8deg)}8%{transform:rotate(6deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(200,230,58,0)}50%{box-shadow:0 0 28px 4px rgba(200,230,58,.45)}}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:1}100%{transform:translateY(900px) rotate(600deg);opacity:1}}
+@keyframes fill7{0%,16%{width:0}30%,96%{width:76%}100%{width:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div class="s">
+<div class="hd" style="padding-bottom: 6px"><div class="row"><div class="disp h1 grow">Ranking</div><a class="back" href="ComoSePuntua.html" aria-label="Cómo se puntúa" style="justify-content: center; width: 44px; height: 44px; margin: 0"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg></a></div></div>
+<div class="body" style="gap: 10px; padding-top: 4px">
+<div class="seg"><a href="RankAlumnos.html">Alumnos</a><a href="RankEntrenadores.html">Entrenadores</a><a class="on" href="RankEscuelas.html">Escuelas</a></div>
+<div class="seg" style="padding: 3px; gap: 3px"><a class="on" href="RankEscuelas.html" style="font-size: 14px">Provincial</a><a href="RankEscuelas.html" style="font-size: 14px">Autonómico</a><a href="RankEscuelas.html" style="font-size: 14px">Nacional</a></div>
+<div class="col" style="gap: 8px">
+<div class="rk" style="animation: slide8_15 8s ease-out infinite both; min-height: 72px"><div class="pos">1</div><div class="av ink" style="border-radius: 12px">EO</div><div class="grow"><div style="font-weight: 800">Escuela Olivar</div><div class="mut" style="font-size: 13px">Huelva</div></div><div class="pts">1.870<small>media</small></div></div>
+<div class="rk" style="animation: slide8_27 8s ease-out infinite both; min-height: 72px"><div class="pos">2</div><div class="av or" style="border-radius: 12px">EC</div><div class="grow"><div style="font-weight: 800">Escuela Costa</div><div class="mut" style="font-size: 13px">Punta Umbría</div></div><div class="pts">1.790<small>media</small></div></div>
+<div class="rk me" style="animation: slide8_39 8s ease-out infinite both; min-height: 72px"><div class="pos">3</div><div class="av ink" style="border-radius: 12px">EM</div><div class="grow"><div style="font-weight: 800">Escuela Marismas (tú)</div><div style="font-size: 13px">Huelva</div></div><div class="pts">1.655<small>media</small></div></div>
+<div class="rk" style="animation: slide8_51 8s ease-out infinite both; min-height: 72px"><div class="pos" style="color: #46566B">4</div><div class="av" style="border-radius: 12px">ED</div><div class="grow"><div style="font-weight: 800">Escuela Dunas</div><div class="mut" style="font-size: 13px">Matalascañas</div></div><div class="pts">1.520<small>media</small></div></div>
+<div class="rk" style="animation: slide8_63 8s ease-out infinite both; min-height: 72px"><div class="pos" style="color: #46566B">5</div><div class="av or" style="border-radius: 12px">EP</div><div class="grow"><div style="font-weight: 800">Escuela Pinar</div><div class="mut" style="font-size: 13px">Lepe</div></div><div class="pts">1.410<small>media</small></div></div>
+</div>
+<div class="card row" style="gap: 12px; padding: 12px 14px; margin-top: auto"><svg class="ico" viewBox="0 0 24 24" style="color: #2446F0"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.5"/></svg><div class="mut" style="font-size: 14px">Una escuela aparece cuando tiene un mínimo de participantes.</div></div>
+</div>
+<div class="tabs">
+<a class="tab" href="PanelDirector.html"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Panel</a>
+<a class="tab" href="Personas.html"><svg class="ico" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14c2.2.6 3.5 2.6 3.5 6"/></svg>Personas</a>
+<a class="tab on" href="RankEscuelas.html"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H3v2a4 4 0 004 4M17 6h4v2a4 4 0 01-4 4M12 14v4M8 21h8M10 18h4"/></svg>Ranking</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
