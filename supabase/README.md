@@ -2,6 +2,8 @@
 
 ## Aplicar las migraciones (primera vez)
 
+Atajo: en un proyecto vacío basta con ejecutar `instalar_todo.sql`, que une las cuatro migraciones en orden (es un archivo generado; las fuentes son las de `migrations/`).
+
 En el panel de Supabase → **SQL Editor** → **New query**. Pega y ejecuta (**Run**), **en este orden**, el contenido de:
 
 1. `migrations/0001_esquema.sql` — tablas
