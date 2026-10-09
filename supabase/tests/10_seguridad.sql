@@ -1,0 +1,333 @@
+-- Pruebas de seguridad (RLS y funciones) para ejecutar en local con PostgreSQL.
+-- Requiere antes: tests/00_simular_supabase.sql + las 3 migraciones.
+-- Uso:  psql -d rk_test -v ON_ERROR_STOP=1 -f supabase/tests/10_seguridad.sql
+\set ON_ERROR_STOP on
+begin;
+
+create schema t;
+create table t.res (n serial, ok boolean, descr text);
+
+create function t.u(n text) returns uuid language sql immutable as $$
+  select ('00000000-0000-0000-0000-' || lpad(to_hex(
+    case n when 'dir1' then 1 when 'dir2' then 2 when 'coach1' then 3 when 'coach2' then 4
+      when 'coach3' then 5 when 'fam1' then 6 when 'fam2' then 7 when 'out' then 8
+      when 'founder' then 9 end), 12, '0'))::uuid $$;
+
+-- Ejecuta sql como usuario autenticado (o 'anon') y devuelve el nº de filas del resultado
+create function t.cnt(usr text, q text) returns bigint language plpgsql as $$
+declare n bigint;
+begin
+  if usr = 'anon' then execute 'set local role anon';
+  else
+    perform set_config('request.jwt.claim.sub', t.u(usr)::text, true);
+    execute 'set local role authenticated';
+  end if;
+  execute 'select count(*) from (' || q || ') s' into n;
+  execute 'reset role';
+  return n;
+exception when others then
+  execute 'reset role';
+  raise;
+end $$;
+
+-- Ejecuta una orden (insert/update/rpc) como usuario; true si no falla
+create function t.run(usr text, q text) returns boolean language plpgsql as $$
+begin
+  perform set_config('request.jwt.claim.sub', t.u(usr)::text, true);
+  execute 'set local role authenticated';
+  execute q;
+  execute 'reset role';
+  return true;
+exception when others then
+  execute 'reset role';
+  return false;
+end $$;
+
+-- Igual, pero devuelve las filas afectadas (para update/delete bloqueados por RLS)
+create function t.rows(usr text, q text) returns bigint language plpgsql as $$
+declare n bigint;
+begin
+  perform set_config('request.jwt.claim.sub', t.u(usr)::text, true);
+  execute 'set local role authenticated';
+  execute 'with x as (' || q || ' returning 1) select count(*) from x' into n;
+  execute 'reset role';
+  return n;
+exception when others then
+  execute 'reset role';
+  return -1;
+end $$;
+
+-- Devuelve el primer valor (texto) de una consulta ejecutada como usuario
+create function t.val(usr text, q text) returns text language plpgsql as $$
+declare v text;
+begin
+  perform set_config('request.jwt.claim.sub', t.u(usr)::text, true);
+  execute 'set local role authenticated';
+  execute q into v;
+  execute 'reset role';
+  return v;
+exception when others then
+  execute 'reset role';
+  raise;
+end $$;
+
+-- true si la consulta, ejecutada como anónimo, falla (permiso denegado)
+create function t.anon_denegado(q text) returns boolean language plpgsql as $$
+begin
+  execute 'set local role anon';
+  execute q;
+  execute 'reset role';
+  return false;
+exception when others then
+  execute 'reset role';
+  return true;
+end $$;
+
+create function t.ok(descr text, cond boolean) returns void language sql as $$
+  insert into t.res (ok, descr) values (coalesce(cond, false), descr) $$;
+
+-- ---------------- Datos de partida ----------------
+insert into auth.users (id, raw_user_meta_data)
+select t.u(n), jsonb_build_object('nombre', n)
+from unnest(array['dir1','dir2','coach1','coach2','coach3','fam1','fam2','out','founder']) n;
+insert into public.fundadores values (t.u('founder'));
+
+-- Escuelas (por la función, como en la app)
+create temp table cod (esc text, codigo text, id uuid);
+grant all on cod to authenticated;
+do $$ begin
+  perform set_config('request.jwt.claim.sub', t.u('dir1')::text, true);
+  set local role authenticated;
+  insert into cod select 'A', codigo, id from public.crear_escuela('Escuela A', 'Madrid', 'Madrid', 'Madrid');
+  reset role;
+  perform set_config('request.jwt.claim.sub', t.u('dir2')::text, true);
+  set local role authenticated;
+  insert into cod select 'B', codigo, id from public.crear_escuela('Escuela B', 'Sevilla', 'Sevilla', 'Andalucía');
+  reset role;
+end $$;
+
+select t.ok('el código tiene formato AAA-999 sin I/O/0/1',
+  (select bool_and(codigo ~ '^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$') from cod));
+
+-- Perfiles de hijo (los crean las familias)
+select t.ok('fam1 crea el perfil de su hijo', t.run('fam1', format(
+  $q$insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+     values ('10000000-0000-0000-0000-000000000001', %L, 'Hijo1', 2016, 'gamer', now())$q$, t.u('fam1'))));
+select t.ok('fam2 crea el perfil de su hijo', t.run('fam2', format(
+  $q$insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+     values ('10000000-0000-0000-0000-000000000002', %L, 'Hijo2', 2015, 'gamer', now())$q$, t.u('fam2'))));
+
+-- Solicitudes de unión
+select t.ok('coach1 pide unirse a A', t.run('coach1',
+  format($q$select public.unirse_a_escuela(%L, 'entrenador')$q$, (select codigo from cod where esc='A'))));
+select t.ok('coach2 pide unirse a B', t.run('coach2',
+  format($q$select public.unirse_a_escuela(%L, 'entrenador')$q$, (select codigo from cod where esc='B'))));
+select t.ok('coach3 pide unirse a A', t.run('coach3',
+  format($q$select public.unirse_a_escuela(%L, 'entrenador')$q$, (select codigo from cod where esc='A'))));
+select t.ok('hijo1 pide unirse a A', t.run('fam1',
+  format($q$select public.unirse_a_escuela(%L, 'alumno', '10000000-0000-0000-0000-000000000001')$q$, (select codigo from cod where esc='A'))));
+select t.ok('hijo2 pide unirse a B', t.run('fam2',
+  format($q$select public.unirse_a_escuela(%L, 'alumno', '10000000-0000-0000-0000-000000000002')$q$, (select codigo from cod where esc='B'))));
+
+-- ---------------- Acceso: unirse y aprobar ----------------
+select t.ok('código inválido rechazado', not t.run('out', $q$select public.unirse_a_escuela('ZZZ-999', 'entrenador')$q$));
+select t.ok('no se puede unir como director', not t.run('out',
+  format($q$select public.unirse_a_escuela(%L, 'director')$q$, (select codigo from cod where esc='A'))));
+select t.ok('alumno sin perfil rechazado', not t.run('out',
+  format($q$select public.unirse_a_escuela(%L, 'alumno')$q$, (select codigo from cod where esc='A'))));
+select t.ok('no se puede usar el perfil de otra familia', not t.run('out',
+  format($q$select public.unirse_a_escuela(%L, 'alumno', '10000000-0000-0000-0000-000000000001')$q$, (select codigo from cod where esc='A'))));
+select t.ok('unirse dos veces no duplica', t.run('coach1',
+  format($q$select public.unirse_a_escuela(%L, 'entrenador')$q$, (select codigo from cod where esc='A')))
+  and (select count(*) from public.membresias where persona_id = t.u('coach1')) = 1);
+
+select t.ok('coach pendiente no ve nada de la escuela (grupos/membresías)',
+  t.cnt('coach3', 'select 1 from public.membresias where escuela_id = (select id from cod where esc=''A'') and persona_id <> ' || quote_literal(t.u('coach3'))) = 0);
+
+select t.ok('un entrenador NO puede aprobar solicitudes', not t.run('coach1',
+  format($q$select public.resolver_membresia(%L, true)$q$,
+    (select id from public.membresias where persona_id = t.u('coach3')))));
+select t.ok('el director de OTRA escuela no puede aprobar', not t.run('dir2',
+  format($q$select public.resolver_membresia(%L, true)$q$,
+    (select id from public.membresias where persona_id = t.u('coach3')))));
+select t.ok('nadie se auto-aprueba por update directo',
+  t.rows('coach3', format($q$update public.membresias set estado='activa' where persona_id=%L$q$, t.u('coach3'))) <= 0);
+select t.ok('coach3 sigue pendiente',
+  (select estado from public.membresias where persona_id = t.u('coach3')) = 'pendiente');
+
+select t.ok('dir1 aprueba coach1', t.run('dir1', format($q$select public.resolver_membresia(%L, true)$q$,
+  (select id from public.membresias where persona_id = t.u('coach1')))));
+select t.ok('dir1 aprueba hijo1', t.run('dir1', format($q$select public.resolver_membresia(%L, true)$q$,
+  (select id from public.membresias where perfil_id = '10000000-0000-0000-0000-000000000001'))));
+select t.ok('dir2 aprueba coach2', t.run('dir2', format($q$select public.resolver_membresia(%L, true)$q$,
+  (select id from public.membresias where persona_id = t.u('coach2')))));
+select t.ok('dir2 aprueba hijo2', t.run('dir2', format($q$select public.resolver_membresia(%L, true)$q$,
+  (select id from public.membresias where perfil_id = '10000000-0000-0000-0000-000000000002'))));
+
+-- ---------------- Aislamiento entre escuelas y roles ----------------
+select t.ok('anónimo: sin acceso a escuelas', t.anon_denegado('select 1 from public.escuelas'));
+select t.ok('anónimo: sin acceso a perfiles de alumno', t.anon_denegado('select 1 from public.perfiles_alumno'));
+select t.ok('anónimo: sin acceso a puntos', t.anon_denegado('select 1 from public.puntos'));
+select t.ok('anónimo: sin acceso a ejercicios', t.anon_denegado('select 1 from public.ejercicios'));
+
+select t.ok('extraño ve 0 escuelas', t.cnt('out', 'select 1 from public.escuelas') = 0);
+select t.ok('extraño ve 0 perfiles', t.cnt('out', 'select 1 from public.perfiles_alumno') = 0);
+select t.ok('extraño ve 0 membresías', t.cnt('out', 'select 1 from public.membresias') = 0);
+select t.ok('dir1 ve solo su escuela', t.cnt('dir1', 'select 1 from public.escuelas') = 1);
+select t.ok('dir1 no ve la escuela B', t.cnt('dir1', format('select 1 from public.escuelas where id = %L', (select id from cod where esc='B'))) = 0);
+select t.ok('fam1 ve solo a su hijo', t.cnt('fam1', 'select 1 from public.perfiles_alumno') = 1);
+select t.ok('fam2 no ve al hijo1', t.cnt('fam2', 'select 1 from public.perfiles_alumno where nombre = ''Hijo1''') = 0);
+select t.ok('coach1 (staff de A) ve al hijo1', t.cnt('coach1', 'select 1 from public.perfiles_alumno where nombre = ''Hijo1''') = 1);
+select t.ok('coach2 (staff de B) NO ve al hijo1', t.cnt('coach2', 'select 1 from public.perfiles_alumno where nombre = ''Hijo1''') = 0);
+select t.ok('dir2 NO ve al hijo1', t.cnt('dir2', 'select 1 from public.perfiles_alumno where nombre = ''Hijo1''') = 0);
+
+select t.ok('no se crea una escuela por insert directo', not t.run('out',
+  format($q$insert into public.escuelas (nombre, codigo, creada_por) values ('Falsa','AAA-222',%L)$q$, t.u('out'))));
+select t.ok('no se crea una membresía por insert directo', not t.run('out',
+  format($q$insert into public.membresias (persona_id, escuela_id, rol, estado) values (%L, %L, 'director', 'activa')$q$,
+    t.u('out'), (select id from cod where esc='A'))));
+select t.ok('dir1 no edita la escuela B', t.rows('dir1',
+  format($q$update public.escuelas set nombre='Hack' where id=%L$q$, (select id from cod where esc='B'))) = 0);
+select t.ok('dir1 edita su escuela', t.rows('dir1',
+  format($q$update public.escuelas set ciudad='Getafe' where id=%L$q$, (select id from cod where esc='A'))) = 1);
+select t.ok('no se cambia el código por update', not t.run('dir1',
+  format($q$update public.escuelas set codigo='AAA-222' where id=%L$q$, (select id from cod where esc='A'))));
+
+-- personas: nombres visibles solo entre miembros de la misma escuela
+select t.ok('fam1 ve el nombre del entrenador de su escuela', t.cnt('fam1', format('select 1 from public.personas where id=%L', t.u('coach1'))) = 1);
+select t.ok('fam1 NO ve al entrenador de otra escuela', t.cnt('fam1', format('select 1 from public.personas where id=%L', t.u('coach2'))) = 0);
+select t.ok('fam1 NO ve a fam2', t.cnt('fam1', format('select 1 from public.personas where id=%L', t.u('fam2'))) = 0);
+select t.ok('coach1 ve a la familia de su alumno', t.cnt('coach1', format('select 1 from public.personas where id=%L', t.u('fam1'))) = 1);
+select t.ok('fam1 solo cambia su propio nombre', t.rows('fam1', format($q$update public.personas set nombre='X' where id=%L$q$, t.u('fam2'))) = 0);
+
+-- perfiles
+select t.ok('no se cambia la familia de un perfil', not t.run('fam1',
+  format($q$update public.perfiles_alumno set familia_id=%L where nombre='Hijo1'$q$, t.u('fam2'))));
+select t.ok('fam2 no puede crear perfil a nombre de fam1', not t.run('fam2', format(
+  $q$insert into public.perfiles_alumno (familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+     values (%L, 'Intruso', 2015, 'gamer', now())$q$, t.u('fam1'))));
+select t.ok('fam2 no borra al hijo1', t.rows('fam2', $q$delete from public.perfiles_alumno where nombre='Hijo1'$q$) = 0);
+
+-- fundador
+select t.ok('fundador se identifica', t.cnt('founder', 'select 1 from public.fundadores') = 1);
+select t.ok('otro usuario no ve la tabla de fundadores', t.cnt('fam1', 'select 1 from public.fundadores') = 0);
+select t.ok('nadie se hace fundador', not t.run('fam1', format('insert into public.fundadores values (%L)', t.u('fam1'))));
+select t.ok('fundador NO ve escuelas ajenas ni menores (sin acceso directo)',
+  t.cnt('founder', 'select 1 from public.perfiles_alumno') = 0);
+
+-- ---------------- Grupos, sesiones y asistencia ----------------
+select t.ok('coach1 no crea grupos (solo el director)', not t.run('coach1', format(
+  $q$insert into public.grupos (escuela_id, nombre, dia, hora, entrenador_id) values (%L,'G',1,'17:00',%L)$q$, (select id from cod where esc='A'), t.u('coach1'))));
+select t.ok('dir1 no asigna un entrenador de otra escuela', not t.run('dir1', format(
+  $q$insert into public.grupos (escuela_id, nombre, dia, hora, entrenador_id) values (%L,'G',1,'17:00',%L)$q$, (select id from cod where esc='A'), t.u('coach2'))));
+select t.ok('dir1 no asigna un entrenador pendiente', not t.run('dir1', format(
+  $q$insert into public.grupos (escuela_id, nombre, dia, hora, entrenador_id) values (%L,'G',1,'17:00',%L)$q$, (select id from cod where esc='A'), t.u('coach3'))));
+select t.ok('dir1 crea un grupo con coach1', t.run('dir1', format(
+  $q$insert into public.grupos (id, escuela_id, nombre, dia, hora, entrenador_id) values ('20000000-0000-0000-0000-000000000001',%L,'Lunes tarde',1,'17:00',%L)$q$,
+  (select id from cod where esc='A'), t.u('coach1'))));
+select t.ok('dir1 inscribe al hijo1', t.run('dir1',
+  $q$insert into public.inscripciones values ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001')$q$));
+select t.ok('dir1 no inscribe a alumnos de otra escuela', not t.run('dir1',
+  $q$insert into public.inscripciones values ('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001')$q$));
+select t.ok('fam1 ve el grupo de su hijo', t.cnt('fam1', 'select 1 from public.grupos') = 1);
+select t.ok('fam2 no ve grupos de A', t.cnt('fam2', 'select 1 from public.grupos where nombre = ''Lunes tarde''') = 0);
+select t.ok('coach3 pendiente no ve grupos', t.cnt('coach3', 'select 1 from public.grupos') = 0);
+
+select t.ok('coach2 no crea sesión en el grupo de A', not t.run('coach2', format(
+  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('coach2'))));
+select t.ok('fam1 no crea sesiones', not t.run('fam1', format(
+  $q$insert into public.sesiones (grupo_id, fecha, creada_por) values ('20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('fam1'))));
+select t.ok('coach1 crea la sesión de su grupo', t.run('coach1', format(
+  $q$insert into public.sesiones (id, grupo_id, fecha, creada_por) values ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','2026-11-02',%L)$q$, t.u('coach1'))));
+
+select t.ok('coach2 no pasa lista en A', not t.run('coach2', format(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',%L)$q$, t.u('coach2'))));
+select t.ok('no se marca a un alumno de otra escuela', not t.run('coach1', format(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',%L)$q$, t.u('coach1'))));
+select t.ok('no se marca a nombre de otro entrenador', not t.run('coach1', format(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',%L)$q$, t.u('coach2'))));
+select t.ok('el entrenador no puede marcar ya confirmada', not t.run('coach1', format(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por, confirmada_por, confirmada_at) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',%L,%L,now())$q$, t.u('coach1'), t.u('coach1'))));
+select t.ok('coach1 pasa lista a hijo1', t.run('coach1', format(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',%L)$q$, t.u('coach1'))));
+
+select t.ok('sin confirmar no hay puntos', (select count(*) from public.puntos) = 0);
+select t.ok('el entrenador no confirma por el alumno', not t.run('coach1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('otra familia no confirma', not t.run('fam2',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('el entrenador no puede editar asistencia por update', not t.run('coach1',
+  $q$update public.asistencias set confirmada_por = (select auth.uid()), confirmada_at = now()$q$));
+select t.ok('fam1 confirma la asistencia de su hijo', t.run('fam1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$));
+select t.ok('ahora hay 10 puntos de la escuela A', (select valor from public.puntos where escuela_id = (select id from cod where esc='A')) = 10);
+select t.ok('confirmar dos veces no da más puntos', not t.run('fam1',
+  $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$)
+  and (select count(*) from public.puntos) = 1);
+select t.ok('no se desmarca una asistencia confirmada', t.rows('coach1', $q$delete from public.asistencias$q$) = 0);
+select t.ok('fam1 ve sus puntos', t.cnt('fam1', 'select 1 from public.puntos') = 1);
+select t.ok('fam2 no ve puntos ajenos', t.cnt('fam2', 'select 1 from public.puntos') = 0);
+select t.ok('coach1 ve los puntos de su escuela', t.cnt('coach1', 'select 1 from public.puntos') = 1);
+select t.ok('coach2 no ve puntos de A', t.cnt('coach2', 'select 1 from public.puntos') = 0);
+select t.ok('nadie escribe puntos directamente', not t.run('fam1',
+  $q$insert into public.puntos (perfil_id, escuela_id, sesion_id, valor) select perfil_id, (select id from cod where esc='A'), sesion_id, 9999 from public.asistencias$q$));
+
+-- ---------------- Ejercicios y biblioteca ----------------
+select t.ok('coach1 sube un ejercicio público', t.run('coach1', format(
+  $q$insert into public.ejercicios (id, autor_id, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000001',%L,'Volea cruzada',2,4)$q$, t.u('coach1'))));
+select t.ok('coach1 sube uno solo para su escuela', t.run('coach1', format(
+  $q$insert into public.ejercicios (id, autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000002',%L,%L,'escuela','Secreto A',1,2)$q$, t.u('coach1'), (select id from cod where esc='A'))));
+select t.ok('no se sube a nombre de otro', not t.run('coach1', format(
+  $q$insert into public.ejercicios (autor_id, titulo, jugadores_min, jugadores_max) values (%L,'Falso',1,2)$q$, t.u('coach2'))));
+select t.ok('una familia no sube ejercicios', not t.run('fam1', format(
+  $q$insert into public.ejercicios (autor_id, titulo, jugadores_min, jugadores_max) values (%L,'Falso',1,2)$q$, t.u('fam1'))));
+select t.ok('no se publica "solo mi escuela" de una escuela ajena', not t.run('coach2', format(
+  $q$insert into public.ejercicios (autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values (%L,%L,'escuela','Intruso',1,2)$q$, t.u('coach2'), (select id from cod where esc='A'))));
+select t.ok('imágenes: solo el autor las añade', t.run('coach1',
+  $q$insert into public.ejercicio_imagenes (ejercicio_id, orden, dibujo) values ('40000000-0000-0000-0000-000000000001',0,'<svg/>')$q$)
+  and not t.run('coach2', $q$insert into public.ejercicio_imagenes (ejercicio_id, orden, dibujo) values ('40000000-0000-0000-0000-000000000001',1,'<svg/>')$q$));
+
+select t.ok('biblioteca: coach2 ve el público pero NO el de escuela',
+  t.cnt('coach2', 'select 1 from public.biblioteca_ejercicios()') = 1
+  and t.cnt('coach2', 'select 1 from public.biblioteca_ejercicios() where titulo = ''Secreto A''') = 0);
+select t.ok('biblioteca: no expone al autor', (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+       where n.nspname='public' and p.proname='biblioteca_ejercicios'
+         and pg_get_function_result(p.oid) ilike '%autor%') = 0);
+select t.ok('biblioteca vacía para una familia', t.cnt('fam1', 'select 1 from public.biblioteca_ejercicios()') = 0);
+select t.ok('coach2 no lee ejercicios ajenos directamente', t.cnt('coach2', 'select 1 from public.ejercicios') = 0);
+select t.ok('coach2 ve las imágenes de un ejercicio público; fam2 no ve ninguna',
+  t.cnt('coach2', 'select 1 from public.ejercicio_imagenes') = 1
+  and t.cnt('fam2', 'select 1 from public.ejercicio_imagenes') = 0);
+select t.ok('dir1 ve el de su escuela', t.cnt('dir1', 'select 1 from public.ejercicios where titulo = ''Secreto A''') = 1);
+select t.ok('coach2 no edita ni borra el ejercicio de coach1',
+  t.rows('coach2', $q$update public.ejercicios set titulo='Hack' where id='40000000-0000-0000-0000-000000000001'$q$) = 0
+  and t.rows('coach2', $q$delete from public.ejercicios where id='40000000-0000-0000-0000-000000000001'$q$) = 0);
+
+select t.ok('coach1 usa su ejercicio en la sesión', t.run('coach1',
+  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001')$q$));
+select t.ok('coach2 no añade usos a sesiones de A', not t.run('coach2',
+  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001')$q$));
+select t.ok('coach2 sube uno privado en B', t.run('coach2', format(
+  $q$insert into public.ejercicios (id, autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000003',%L,%L,'escuela','Secreto B',1,2)$q$, t.u('coach2'), (select id from cod where esc='B'))));
+select t.ok('coach1 no usa en su sesión el privado de otra escuela', not t.run('coach1',
+  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000003')$q$));
+select t.ok('fam1 ve el ejercicio que usa la clase de su hijo', t.cnt('fam1', 'select 1 from public.ejercicios') = 1);
+select t.ok('fam2 no lo ve', t.cnt('fam2', 'select 1 from public.ejercicios') = 0);
+select t.ok('el uso se suma en la biblioteca', t.val('coach2', 'select usos from public.biblioteca_ejercicios() where titulo = ''Volea cruzada''') = '1');
+
+-- ---------------- Funciones de sistema ----------------
+select t.ok('anónimo no ejecuta crear_escuela', (
+  select not has_function_privilege('anon', 'public.crear_escuela(text,text,text,text)', 'execute')));
+select t.ok('anónimo no ejecuta confirmar_asistencia', (
+  select not has_function_privilege('anon', 'public.confirmar_asistencia(uuid,uuid)', 'execute')));
+select t.ok('anónimo sin acceso a tablas', (
+  select not bool_or(has_table_privilege('anon', c.oid, 'select'))
+  from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'));
+select t.ok('todas las tablas públicas tienen RLS', (
+  select bool_and(c.relrowsecurity) from pg_class c join pg_namespace n on n.oid=c.relnamespace
+  where n.nspname='public' and c.relkind='r'));
+
+select case when bool_and(ok) then 'TODAS LAS PRUEBAS PASAN (' || count(*) || ')'
+       else 'HAY FALLOS' end as resultado from t.res;
+select n, descr from t.res where not ok order by n;
+rollback;
