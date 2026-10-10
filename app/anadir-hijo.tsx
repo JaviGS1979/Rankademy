@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { Aviso, Button, Field, Screen } from '@/components';
 import { crearPerfil, unirseAEscuela } from '@/lib/api';
 import { mensajeError } from '@/lib/errores';
+import { usePerfiles } from '@/lib/perfil';
 import { avisar } from '@/lib/avisar';
 import { colors, fonts } from '@/theme';
 
@@ -20,6 +21,7 @@ const TEXTO_CONSENTIMIENTO =
 export default function AnadirHijo() {
   const router = useRouter();
   const { codigo } = useLocalSearchParams<{ codigo?: string }>();
+  const { recargar, elegir } = usePerfiles();
   const [nombre, setNombre] = useState('');
   const [anio, setAnio] = useState('');
   const [acepto, setAcepto] = useState(false);
@@ -40,16 +42,18 @@ export default function AnadirHijo() {
     let perfilId: string;
     try {
       perfilId = (await crearPerfil(nombre, Number(anio))).id;
+      await recargar();
+      elegir(perfilId);
     } catch (e) {
       setError(mensajeError(e));
       setEnviando(false);
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    if (!codigo) return router.replace('/mis-escuelas');
+    if (!codigo) return router.replace('/inicio');
     try {
       await unirseAEscuela(codigo, 'alumno', perfilId);
-      router.replace('/mis-escuelas');
+      router.replace('/inicio');
     } catch (e) {
       // El perfil ya está creado: se reintenta solo la unión, sin duplicarlo
       router.replace({ pathname: '/anadir-escuela', params: { error: mensajeError(e), codigo, perfil: perfilId } });

@@ -14,6 +14,8 @@ type Props = {
   subtitle?: string;
   back?: boolean;
   scroll?: boolean;
+  // Sin márgenes ni separación: el contenido (p. ej. una imagen a sangre) llega a los bordes
+  sinMargen?: boolean;
   // Tirar hacia abajo para refrescar
   refreshing?: boolean;
   onRefresh?: () => void;
@@ -21,7 +23,7 @@ type Props = {
 
 // Contenedor de pantalla: zonas seguras, teclado y cabecera con "Atrás".
 // En web limita el ancho a 480 px para que la app móvil no se estire.
-export function Screen({ children, dark, title, subtitle, back, scroll = true, refreshing, onRefresh }: Props) {
+export function Screen({ children, dark, title, subtitle, back, scroll = true, sinMargen, refreshing, onRefresh }: Props) {
   const router = useRouter();
   const { session } = useSesion();
   const bg = dark ? colors.ink : colors.bg;
@@ -41,7 +43,7 @@ export function Screen({ children, dark, title, subtitle, back, scroll = true, r
                   accessibilityRole="button"
                   accessibilityLabel="Atrás"
                   onPress={() =>
-                    router.canGoBack() ? router.back() : router.replace(session ? '/mis-escuelas' : '/')
+                    router.canGoBack() ? router.back() : router.replace(session ? '/inicio' : '/')
                   }
                   style={styles.back}
                   hitSlop={8}
@@ -62,7 +64,7 @@ export function Screen({ children, dark, title, subtitle, back, scroll = true, r
           )}
           <Body
             style={styles.flex}
-            contentContainerStyle={scroll ? styles.bodyContent : undefined}
+            contentContainerStyle={scroll ? (sinMargen ? styles.sinMargen : styles.bodyContent) : undefined}
             keyboardShouldPersistTaps="handled"
             refreshControl={
               scroll && onRefresh ? (
@@ -85,5 +87,6 @@ const styles = StyleSheet.create({
   header: { paddingTop: 20, paddingHorizontal: 20, paddingBottom: 10, gap: 6 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: touch.min, marginLeft: -6 },
   backText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
+  sinMargen: { flexGrow: 1 },
   bodyContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 16, flexGrow: 1 },
 });

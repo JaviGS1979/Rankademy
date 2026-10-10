@@ -14,6 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
 import { SesionProvider, useSesion } from '@/lib/sesion';
+import { PerfilProvider } from '@/lib/perfil';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -33,8 +34,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.ink }}>
       <SafeAreaProvider>
         <SesionProvider>
-          <StatusBar style="auto" />
-          <Navegacion />
+          <PerfilProvider>
+            <StatusBar style="auto" />
+            <Navegacion />
+          </PerfilProvider>
         </SesionProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -64,6 +67,10 @@ function Navegacion() {
         <Stack.Screen name="entrar" />
       </Stack.Protected>
       <Stack.Protected guard={!!session}>
+        <Stack.Screen name="inicio" />
+        <Stack.Screen name="selector-perfil" />
+        <Stack.Screen name="alumno" />
+        <Stack.Screen name="resumen" />
         <Stack.Screen name="mis-escuelas" />
         <Stack.Screen name="crear-escuela" />
         <Stack.Screen name="anadir-escuela" />

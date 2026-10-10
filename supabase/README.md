@@ -2,7 +2,7 @@
 
 ## Aplicar las migraciones (primera vez)
 
-Atajo: en un proyecto vacío basta con ejecutar `instalar_todo.sql`, que une las cuatro migraciones en orden (es un archivo generado; las fuentes son las de `migrations/`).
+Atajo: en un proyecto vacío basta con ejecutar `instalar_todo.sql`, que une las cinco migraciones en orden (es un archivo generado; las fuentes son las de `migrations/`).
 
 En el panel de Supabase → **SQL Editor** → **New query**. Pega y ejecuta (**Run**), **en este orden**, el contenido de:
 
@@ -50,3 +50,16 @@ La app entra sin contraseña: Supabase envía un **código de 6 cifras** al corr
 ```
 
 El servidor de correo incluido en Supabase es solo para pruebas: envía pocos correos por hora y únicamente a direcciones del equipo del proyecto. Antes de invitar a otras personas hay que configurar un SMTP propio (Authentication → Emails → SMTP Settings; por ejemplo Resend o Brevo).
+
+## Reglas del alumno (0005)
+
+Todas están en `migrations/0005_alumno.sql`, para poder ajustarlas en un solo sitio:
+
+| Regla | Valor inicial |
+|---|---|
+| XP por clase confirmada | 100, más 10 por cada semana de racha por encima de la primera (máx. +50) |
+| Nivel | 1 + XP / 250 |
+| Racha | semanas seguidas (lunes a domingo) con al menos una clase confirmada; sigue viva si la última es la semana actual o la anterior |
+| Avatares | 4 gratuitos; del 5 al 15 por clases confirmadas (5, 8, 10, 15, 20 … 50); 16-18 por racha (10, 20, 50 semanas) |
+
+Para cambiar el XP por clase o el coste de un nivel, edita `confirmar_asistencia` y `nivel_de_xp`/`mi_progreso` (el 250 aparece en esas dos funciones).

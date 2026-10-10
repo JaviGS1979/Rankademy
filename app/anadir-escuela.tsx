@@ -38,7 +38,7 @@ export default function AnadirEscuela() {
       if (quien === 'entrenador') await unirseAEscuela(codigo, 'entrenador');
       else await unirseAEscuela(codigo, 'alumno', quien);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      router.replace('/mis-escuelas');
+      router.replace('/inicio');
     } catch (e) {
       setError(mensajeError(e));
       setEnviando(false);

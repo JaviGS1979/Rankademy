@@ -55,9 +55,9 @@ export default function Verificar() {
           router.replace({ pathname: '/anadir-hijo', params: { codigo: p.codigo } });
         } else if (p.rol === 'entrenador' && p.codigo) {
           await unirseAEscuela(p.codigo, 'entrenador');
-          router.replace('/mis-escuelas');
+          router.replace('/inicio');
         } else {
-          router.replace('/mis-escuelas');
+          router.replace('/inicio');
         }
       } catch (e) {
         // La cuenta ya existe; falló el código de escuela: se puede reintentar

@@ -14,6 +14,8 @@ Expo (React Native) + TypeScript + Expo Router; backend en Supabase.
 npm install
 npx expo start        # Expo Go en el móvil; pulsa "w" para web
 npx tsc --noEmit      # comprobación de tipos
+npm test              # pruebas de las fechas de clase
+supabase/tests/run.sh # pruebas de seguridad de la base de datos (PostgreSQL local)
 ```
 
 ## Configuración
@@ -25,3 +27,4 @@ Copia `.env.example` a `.env` con la URL y la clave pública de Supabase. La bas
 - Fase 1: proyecto Expo, tema y pantallas de arranque.
 - Fase 2: esquema de Supabase, reglas de acceso (RLS) y pruebas de seguridad.
 - Fase 3: registro e inicio de sesión con código por correo, crear escuela, unirse con código, añadir hijo, Mis escuelas y aprobación de solicitudes.
+- Fase 4: selector de perfil, inicio Mini y Gamer, confirmar asistencia, resumen tras la clase, progreso, avatares y ejercicios de la clase.
