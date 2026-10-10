@@ -40,7 +40,7 @@ export default function InicioMini({ perfil }: { perfil: Perfil }) {
         </View>
 
         <Pop delay={200} style={[styles.pos, { left: 12, top: 190 }]}>
-          <Ficha etiqueta={`Racha de ${p.racha} semanas`} ancho={88} alto={96}>
+          <Ficha etiqueta={`Racha de ${p.racha} días`} ancho={88} alto={96}>
             <Icon name="flame" size={34} color="#FF8A4C" fill="#FF8A4C" />
             <Text style={styles.num}>{p.racha}</Text>
           </Ficha>

@@ -38,7 +38,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "node --test src/lib/fechas.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "avatares": "node scripts/avatares.mjs"
   },
   "private": true
 }

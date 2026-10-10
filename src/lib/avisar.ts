@@ -6,13 +6,13 @@ export function avisar(titulo: string, texto: string) {
   else Alert.alert(titulo, texto);
 }
 
-export function confirmar(titulo: string, texto: string, accion: string, onSi: () => void) {
+export function confirmar(titulo: string, texto: string, accion: string, onSi: () => void, destructivo = true) {
   if (Platform.OS === 'web') {
     if (window.confirm(`${titulo}\n\n${texto}`)) onSi();
     return;
   }
   Alert.alert(titulo, texto, [
     { text: 'Cancelar', style: 'cancel' },
-    { text: accion, style: 'destructive', onPress: onSi },
+    { text: accion, style: destructivo ? 'destructive' : 'default', onPress: onSi },
   ]);
 }

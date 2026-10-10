@@ -89,6 +89,15 @@ exception when insufficient_privilege then
   return true;
 end $$;
 
+-- true si la orden (como administrador) falla por una restricción de la tabla
+create function t.viola_restriccion(q text) returns boolean language plpgsql as $$
+begin
+  execute q;
+  return false;
+exception when check_violation or not_null_violation or unique_violation or foreign_key_violation then
+  return true;
+end $$;
+
 create function t.ok(descr text, cond boolean) returns void language sql as $$
   insert into t.res (ok, descr) values (coalesce(cond, false), descr) $$;
 
@@ -266,7 +275,7 @@ select t.ok('el entrenador no puede editar asistencia por update', not t.run('co
   $q$update public.asistencias set confirmada_por = (select auth.uid()), confirmada_at = now()$q$));
 select t.ok('fam1 confirma la asistencia de su hijo', t.run('fam1',
   $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$));
-select t.ok('ahora hay 100 puntos (XP) de la escuela A', (select valor from public.puntos where escuela_id = (select id from cod where esc='A')) = 100);
+select t.ok('ahora hay 300 puntos (XP) de la escuela A', (select valor from public.puntos where escuela_id = (select id from cod where esc='A')) = 300);
 select t.ok('confirmar dos veces no da más puntos', not t.run('fam1',
   $q$select public.confirmar_asistencia('30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001')$q$)
   and (select count(*) from public.puntos) = 1);
@@ -353,65 +362,66 @@ select t.ok('app: el entrenador ve las solicitudes de su escuela',
 select t.ok('app: el entrenador no puede aprobarlas', not t.run('coach1', format($q$select public.resolver_membresia(%L, true)$q$,
   (select id from public.membresias where persona_id = t.u('coach3')))));
 
--- ---------------- Alumno (0005): XP, nivel, racha y avatares ----------------
+-- ---------------- Alumno (0005): XP, avatares con precio ----------------
 -- (se ejecuta antes de la baja de hijo1 de las pruebas de 0004)
-select t.ok('app: confirmar devuelve XP, nivel y racha',
-  (select (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'xp')::int) = 100
+select t.ok('app: mi_progreso da XP, saldo, nivel, racha (días) y clases',
+  (select (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'xp')::int) = 300
+  and (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'saldo')::int = 300
   and (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'nivel')::int = 1
   and (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'racha')::int = 1
   and (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'clases')::int = 1);
+select t.ok('una clase de un alumno con un solo grupo da 300 XP', (select valor from public.puntos where perfil_id='10000000-0000-0000-0000-000000000001') = 300);
 select t.ok('app: otra familia no ve el progreso ajeno', not t.run('fam2',
   $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')$q$));
-select t.ok('el perfil tiene avatar inicial y 4 gratuitos desbloqueados',
+select t.ok('el perfil tiene avatar inicial y solo los 2 gratuitos',
   (select avatar from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001') = 'av01'
-  and (select count(*) from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001') = 4);
-select t.ok('app: el catálogo de avatares tiene 18', t.cnt('fam1', 'select 1 from public.avatares') = 18);
+  and (select string_agg(avatar, ',' order by avatar) from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001') = 'av01,av08');
+select t.ok('app: el catálogo tiene 18 avatares con precio y solo 2 gratis',
+  t.cnt('fam1', 'select 1 from public.avatares') = 18 and t.cnt('fam1', 'select 1 from public.avatares where precio_xp = 0') = 2);
 select t.ok('anónimo: sin acceso al catálogo', t.anon_denegado('select 1 from public.avatares'));
-select t.ok('se elige un avatar desbloqueado', t.run('fam1',
-  $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av03')$q$));
-select t.ok('...y queda guardado', (select avatar from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001') = 'av03');
-select t.ok('no se elige un avatar bloqueado', not t.run('fam1',
+select t.ok('el nivel sube cada 1000 XP', privado.nivel_de_xp(0) = 1 and privado.nivel_de_xp(999) = 1
+  and privado.nivel_de_xp(1000) = 2 and privado.nivel_de_xp(4000) = 5);
+
+select t.ok('se elige un avatar gratuito', t.run('fam1',
+  $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av08')$q$));
+select t.ok('...y queda guardado', (select avatar from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001') = 'av08');
+select t.ok('no se elige un avatar que no se tiene', not t.run('fam1',
   $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av18')$q$));
 select t.ok('no se elige avatar del perfil ajeno', not t.run('fam2',
-  $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av02')$q$));
+  $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av01')$q$));
 select t.ok('el avatar no se cambia por update directo', not t.run('fam1',
   $q$update public.perfiles_alumno set avatar = 'av18' where nombre = 'Hijo1'$q$));
 select t.ok('el avatar no se fija al crear un perfil', not t.run('fam1', format(
   $q$insert into public.perfiles_alumno (familia_id, nombre, anio_nacimiento, nivel, consentimiento_at, avatar)
      values (%L, 'Otro', 2016, 'gamer', now(), 'av18')$q$, t.u('fam1'))));
+
+-- Comprar con XP: Hijo1 tiene 300 XP
+select t.ok('no se compra un avatar que cuesta más que el saldo', not t.run('fam1',
+  $q$select public.comprar_avatar('10000000-0000-0000-0000-000000000001','av03')$q$));
+select t.ok('otra familia no compra por el perfil ajeno', not t.run('fam2',
+  $q$select public.comprar_avatar('10000000-0000-0000-0000-000000000001','av02')$q$));
+select t.ok('no se compra un avatar que no existe', not t.run('fam1',
+  $q$select public.comprar_avatar('10000000-0000-0000-0000-000000000001','av99')$q$));
+select t.ok('se compra un avatar de 300 XP con 300 XP', t.run('fam1',
+  $q$select public.comprar_avatar('10000000-0000-0000-0000-000000000001','av02')$q$));
+select t.ok('...el saldo baja a 0 pero el XP ganado y el nivel no',
+  (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'saldo')::int = 0
+  and (t.val('fam1', $q$select public.mi_progreso('10000000-0000-0000-0000-000000000001')::text$q$)::jsonb ->> 'xp')::int = 300
+  and (select precio_pagado from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001' and avatar='av02') = 300);
+select t.ok('no se compra dos veces el mismo avatar', not t.run('fam1',
+  $q$select public.comprar_avatar('10000000-0000-0000-0000-000000000001','av02')$q$));
+select t.ok('el avatar comprado ya se puede elegir', t.run('fam1',
+  $q$select public.elegir_avatar('10000000-0000-0000-0000-000000000001','av02')$q$));
+select t.ok('no se escribe directamente en los avatares conseguidos', not t.run('fam1',
+  $q$insert into public.avatares_desbloqueados (perfil_id, avatar) values ('10000000-0000-0000-0000-000000000001','av18')$q$));
+
+-- Perfil nuevo (de la edad que sea): recibe avatar inicial y los 2 gratuitos
 select t.ok('la familia crea un perfil nuevo', t.run('fam1', format(
   $q$insert into public.perfiles_alumno (familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
-     values (%L, 'Nuevo', 2018, 'mini', now())$q$, t.u('fam1'))));
-select t.ok('...y recibe avatar inicial y los 4 gratuitos',
+     values (%L, 'Nuevo', 2016, 'gamer', now())$q$, t.u('fam1'))));
+select t.ok('...y recibe avatar inicial y los 2 gratuitos',
   (select avatar from public.perfiles_alumno where nombre='Nuevo') = 'av01'
-  and (select count(*) from public.avatares_desbloqueados d join public.perfiles_alumno p on p.id=d.perfil_id where p.nombre='Nuevo') = 4);
-
--- Racha y XP con 12 semanas seguidas de clases confirmadas
-insert into public.sesiones (id, grupo_id, fecha, estado, creada_por)
-select ('31000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
-       '20000000-0000-0000-0000-000000000001', current_date - (n * 7), 'impartida', t.u('dir1')
-from generate_series(1, 11) n;
-insert into public.asistencias (sesion_id, perfil_id, marcada_por, confirmada_por, confirmada_at)
-select id, '10000000-0000-0000-0000-000000000001', t.u('dir1'), t.u('fam1'), now()
-from public.sesiones where id::text like '31000000%';
-select t.ok('racha: una semana por cada semana seguida con clase confirmada',
-  privado.racha_semanas('10000000-0000-0000-0000-000000000001') = (
-    select count(distinct date_trunc('week', s.fecha)) from public.asistencias a
-    join public.sesiones s on s.id = a.sesion_id
-    where a.perfil_id = '10000000-0000-0000-0000-000000000001' and a.confirmada_at is not null));
-delete from public.asistencias where sesion_id = '31000000-0000-0000-0000-000000000003';
-select t.ok('un hueco de una semana corta la racha (solo cuentan las semanas posteriores)',
-  privado.racha_semanas('10000000-0000-0000-0000-000000000001') = (
-    select count(distinct date_trunc('week', s.fecha)) from public.asistencias a
-    join public.sesiones s on s.id = a.sesion_id
-    where a.perfil_id = '10000000-0000-0000-0000-000000000001' and a.confirmada_at is not null
-      and s.fecha > current_date - 21));
-select t.ok('el nivel sube cada 250 XP', privado.nivel_de_xp(0) = 1 and privado.nivel_de_xp(249) = 1
-  and privado.nivel_de_xp(250) = 2 and privado.nivel_de_xp(1000) = 5);
-select privado.desbloquear_avatares('10000000-0000-0000-0000-000000000001');
-select t.ok('desbloquea por clases confirmadas (11 clases → av07 de 10 clases, no av08 de 15)',
-  exists (select 1 from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001' and avatar='av07')
-  and not exists (select 1 from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001' and avatar='av08'));
+  and (select count(*) from public.avatares_desbloqueados d join public.perfiles_alumno p on p.id=d.perfil_id where p.nombre='Nuevo') = 2);
 
 -- ---------------- Revisión (0004) ----------------
 -- Integridad de puntos
@@ -488,6 +498,99 @@ select t.ok('se borra la cuenta de una familia y con ella los datos del menor',
   not exists (select 1 from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001')
   and (select count(*) from public.puntos) = 0
   and not exists (select 1 from public.asistencias where perfil_id='10000000-0000-0000-0000-000000000001'));
+
+-- ---------------- Racha por días, XP según el plan y perfiles Mini (0005) ----------------
+-- Datos nuevos, todos de fam2 (que no se borra antes). Escuela A, 3 grupos.
+insert into public.grupos (id, escuela_id, nombre, dia, hora) select
+  ('50000000-0000-0000-0000-00000000000' || n)::uuid, (select id from cod where esc='A'), 'Grupo ' || n, n, '17:00'
+from generate_series(1, 3) n;
+-- P2: apuntado al grupo 1 desde hace 40 días
+insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+values ('60000000-0000-0000-0000-000000000002', t.u('fam2'), 'Racha', extract(year from current_date)::int - 12, 'gamer', now());
+insert into public.membresias (persona_id, perfil_id, escuela_id, rol, estado)
+values (t.u('fam2'), '60000000-0000-0000-0000-000000000002', (select id from cod where esc='A'), 'alumno', 'activa');
+insert into public.inscripciones (perfil_id, grupo_id, desde) values ('60000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000001', current_date - 40);
+
+-- Clases semanales confirmadas: días -35, -28, -21, -14, -7
+insert into public.sesiones (id, grupo_id, fecha, estado)
+select ('51000000-0000-0000-0000-' || lpad((-d)::text, 12, '0'))::uuid, '50000000-0000-0000-0000-000000000001', current_date + d, 'impartida'
+from unnest(array[-35, -28, -21, -14, -7]) d;
+insert into public.asistencias (sesion_id, perfil_id, marcada_por, confirmada_por, confirmada_at)
+select id, '60000000-0000-0000-0000-000000000002', t.u('dir2'), t.u('fam2'), now() from public.sesiones where id::text like '51000000%';
+select t.ok('racha: 5 clases semanales seguidas = 29 días (de la primera a la última)',
+  privado.racha_dias('60000000-0000-0000-0000-000000000002') = 29);
+
+-- Una clase cancelada sin asistencia no rompe la racha
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('52000000-0000-0000-0000-000000000017', '50000000-0000-0000-0000-000000000001', current_date - 17, 'cancelada');
+select t.ok('racha: una clase cancelada no la rompe', privado.racha_dias('60000000-0000-0000-0000-000000000002') = 29);
+
+-- Una clase anterior a apuntarse al grupo no cuenta
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('52000000-0000-0000-0000-000000000060', '50000000-0000-0000-0000-000000000001', current_date - 60, 'impartida');
+select t.ok('racha: las clases anteriores a apuntarse no cuentan como falta', privado.racha_dias('60000000-0000-0000-0000-000000000002') = 29);
+
+-- Falta justificada (la marca el entrenador): no rompe
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('52000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000001', current_date - 3, 'impartida');
+insert into public.asistencias (sesion_id, perfil_id, marcada_por, justificada) values ('52000000-0000-0000-0000-000000000003', '60000000-0000-0000-0000-000000000002', t.u('dir2'), true);
+select t.ok('racha: una falta justificada no la rompe', privado.racha_dias('60000000-0000-0000-0000-000000000002') = 29);
+select t.ok('una falta justificada no se puede confirmar ni da XP', not t.run('fam2',
+  $q$select public.confirmar_asistencia('52000000-0000-0000-0000-000000000003','60000000-0000-0000-0000-000000000002')$q$));
+select t.ok('una falta justificada no puede figurar a la vez como confirmada (restricción de la tabla)', t.viola_restriccion(
+  $q$insert into public.asistencias (sesion_id, perfil_id, marcada_por, justificada, confirmada_por, confirmada_at)
+     values ('52000000-0000-0000-0000-000000000003','60000000-0000-0000-0000-000000000003', null, true, null, now())$q$));
+
+-- Una clase pasada sin asistencia rompe la racha
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('52000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000001', current_date - 2, 'impartida');
+select t.ok('racha: una falta sin justificar la deja en 0', privado.racha_dias('60000000-0000-0000-0000-000000000002') = 0);
+
+-- Y se empieza una nueva con la siguiente clase confirmada
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('52000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', current_date - 1, 'impartida');
+insert into public.asistencias (sesion_id, perfil_id, marcada_por, confirmada_por, confirmada_at) values ('52000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000002', t.u('dir2'), t.u('fam2'), now());
+select t.ok('racha: tras faltar, la siguiente clase empieza una racha de 1 día', privado.racha_dias('60000000-0000-0000-0000-000000000002') = 1);
+
+-- XP según el plan: P3 va a 3 grupos → cada clase vale 100 XP (300/3), sin racha
+insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+values ('60000000-0000-0000-0000-000000000003', t.u('fam2'), 'TresDias', extract(year from current_date)::int - 12, 'gamer', now());
+insert into public.membresias (persona_id, perfil_id, escuela_id, rol, estado)
+values (t.u('fam2'), '60000000-0000-0000-0000-000000000003', (select id from cod where esc='A'), 'alumno', 'activa');
+insert into public.inscripciones (perfil_id, grupo_id) select '60000000-0000-0000-0000-000000000003', id from public.grupos where id::text like '50000000%';
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('53000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', current_date, 'impartida');
+insert into public.asistencias (sesion_id, perfil_id, marcada_por) values ('53000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000003', t.u('dir2'));
+select t.ok('XP: el alumno de 3 grupos confirma su clase', t.run('fam2',
+  $q$select public.confirmar_asistencia('53000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000003')$q$));
+select t.ok('...y gana 100 XP (300 / 3 clases a la semana)', (select valor from public.puntos where perfil_id='60000000-0000-0000-0000-000000000003') = 100);
+
+-- XP con bonus de racha: P4 (1 grupo) lleva 4 clases semanales confirmadas y confirma la quinta
+insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+values ('60000000-0000-0000-0000-000000000004', t.u('fam2'), 'Bonus', extract(year from current_date)::int - 12, 'gamer', now());
+insert into public.membresias (persona_id, perfil_id, escuela_id, rol, estado)
+values (t.u('fam2'), '60000000-0000-0000-0000-000000000004', (select id from cod where esc='A'), 'alumno', 'activa');
+insert into public.inscripciones (perfil_id, grupo_id, desde) values ('60000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000002', current_date - 40);
+insert into public.sesiones (id, grupo_id, fecha, estado)
+select ('54000000-0000-0000-0000-' || lpad((-d)::text, 12, '0'))::uuid, '50000000-0000-0000-0000-000000000002', current_date + d, 'impartida'
+from unnest(array[-28, -21, -14, -7, 0]) d;
+insert into public.asistencias (sesion_id, perfil_id, marcada_por, confirmada_por, confirmada_at)
+select id, '60000000-0000-0000-0000-000000000004', t.u('dir2'), t.u('fam2'), now() from public.sesiones where id::text like '54000000%' and fecha < current_date;
+insert into public.asistencias (sesion_id, perfil_id, marcada_por)
+select id, '60000000-0000-0000-0000-000000000004', t.u('dir2') from public.sesiones where id::text like '54000000%' and fecha = current_date;
+select t.ok('XP: confirma con una racha de 29 días', t.run('fam2', format(
+  $q$select public.confirmar_asistencia(%L,'60000000-0000-0000-0000-000000000004')$q$, (select id from public.sesiones where id::text like '54000000%' and fecha = current_date))));
+select t.ok('...gana 420 XP (300 + 40 % por 4 semanas de racha)', (select valor from public.puntos where perfil_id='60000000-0000-0000-0000-000000000004') = 420);
+
+-- Perfil Mini (5 años): no compra; desbloquea solo según su XP ganado
+insert into public.perfiles_alumno (id, familia_id, nombre, anio_nacimiento, nivel, consentimiento_at)
+values ('60000000-0000-0000-0000-000000000005', t.u('fam2'), 'Pequeño', extract(year from current_date)::int - 5, 'mini', now());
+select t.ok('un Mini no puede comprar avatares', not t.run('fam2',
+  $q$select public.comprar_avatar('60000000-0000-0000-0000-000000000005','av02')$q$));
+insert into public.sesiones (id, grupo_id, fecha, estado) values ('55000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000003', current_date, 'impartida');
+insert into public.puntos (perfil_id, escuela_id, sesion_id, valor) values ('60000000-0000-0000-0000-000000000005', (select id from cod where esc='A'), '55000000-0000-0000-0000-000000000001', 600);
+select privado.desbloquear_mini('60000000-0000-0000-0000-000000000005') is not null;
+select t.ok('un Mini desbloquea solo los avatares que alcanza su XP (hasta 600 XP)',
+  (select count(*) from public.avatares_desbloqueados where perfil_id='60000000-0000-0000-0000-000000000005')
+    = (select count(*) from public.avatares where precio_xp <= 600)
+  and (select sum(precio_pagado) from public.avatares_desbloqueados where perfil_id='60000000-0000-0000-0000-000000000005') = 0);
+select t.ok('...sin gastar XP (el saldo sigue entero)',
+  (t.val('fam2', $q$select public.mi_progreso('60000000-0000-0000-0000-000000000005')::text$q$)::jsonb ->> 'saldo')::int = 600);
+
 
 select case when bool_and(ok) then 'TODAS LAS PRUEBAS PASAN (' || count(*) || ')'
        else 'HAY FALLOS' end as resultado from t.res;

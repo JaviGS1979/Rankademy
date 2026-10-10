@@ -49,10 +49,10 @@ export default function InicioGamer({ perfil }: { perfil: Perfil }) {
           </Ficha>
         </Pop>
         <Pop delay={300} style={[styles.fichaPos, { left: 12, top: 226 }]}>
-          <Ficha etiqueta={`Racha de ${p.racha} semanas`}>
+          <Ficha etiqueta={`Racha de ${p.racha} días`}>
             <Icon name="flame" size={26} color="#FF8A4C" fill="#FF8A4C" />
             <Text style={[styles.num, { fontSize: 30 }]}>{p.racha}</Text>
-            <Text style={styles.ficha}>{p.racha === 1 ? 'semana' : 'semanas'}</Text>
+            <Text style={styles.ficha}>{p.racha === 1 ? 'día' : 'días'}</Text>
           </Ficha>
         </Pop>
         <Pop delay={450} style={[styles.fichaPos, { right: 12, top: 150 }]}>

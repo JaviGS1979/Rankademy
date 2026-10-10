@@ -7,6 +7,7 @@ Expo (React Native) + TypeScript + Expo Router; backend en Supabase.
 - `app/` — rutas (Expo Router).
 - `src/theme` — tokens de color y tipografía (de `design/assets/rankademy.css`).
 - `src/components` — componentes base.
+- `assets/avatares/` — avatares: `avNN.jpg` (miniatura 220×220) y `hero-NN.jpg` (cuerpo completo 780×1036). Tras añadir imágenes, `npm run avatares`.
 
 ## Desarrollo
 
@@ -15,6 +16,7 @@ npm install
 npx expo start        # Expo Go en el móvil; pulsa "w" para web
 npx tsc --noEmit      # comprobación de tipos
 npm test              # pruebas de las fechas de clase
+npm run avatares      # actualiza los avatares a partir de assets/avatares/ e informa de los que faltan
 supabase/tests/run.sh # pruebas de seguridad de la base de datos (PostgreSQL local)
 ```
 

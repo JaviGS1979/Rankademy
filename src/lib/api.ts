@@ -83,26 +83,31 @@ export async function resolverSolicitud(membresiaId: string, aprobar: boolean) {
 }
 
 // ---------- Perfiles de hijos ----------
+// Mini hasta 7 años (incluidos). Se calcula siempre por el año de nacimiento: así un
+// perfil pasa solo de Mini a Gamer al cumplir 8 años.
 export function nivelPorAnio(anio: number, hoy = new Date()): Nivel {
   return hoy.getFullYear() - anio <= 7 ? 'mini' : 'gamer';
 }
 
+const conNivel = (p: Perfil): Perfil => ({ ...p, nivel: nivelPorAnio(p.anio_nacimiento) });
+
 export async function misPerfiles(): Promise<Perfil[]> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) return [];
-  return ok(
+  const data = ok(
     await supabase
       .from('perfiles_alumno')
       .select('id, nombre, anio_nacimiento, nivel, avatar')
       .eq('familia_id', u.user.id)
       .order('creado_at'),
   ) as Perfil[];
+  return data.map(conNivel);
 }
 
 export async function crearPerfil(nombre: string, anio: number): Promise<Perfil> {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) throw new Error('Necesitas iniciar sesión');
-  return ok(
+  const creado = ok(
     await supabase
       .from('perfiles_alumno')
       .insert({
@@ -115,6 +120,7 @@ export async function crearPerfil(nombre: string, anio: number): Promise<Perfil>
       .select('id, nombre, anio_nacimiento, nivel, avatar')
       .single(),
   ) as Perfil;
+  return conNivel(creado);
 }
 
 // ---------- Alumno ----------
@@ -151,7 +157,8 @@ export async function pendientesDeConfirmar(perfilId: string): Promise<Pendiente
       .from('asistencias')
       .select('sesion_id, sesion:sesiones(fecha, estado, grupo:grupos(nombre, hora, entrenador:personas(nombre)))')
       .eq('perfil_id', perfilId)
-      .is('confirmada_at', null),
+      .is('confirmada_at', null)
+      .eq('justificada', false),
   ) as unknown as {
     sesion_id: string;
     sesion: { fecha: string; estado: string; grupo: Pendiente['grupo'] } | null;
@@ -170,7 +177,7 @@ export async function confirmarAsistencia(sesionId: string, perfilId: string): P
 }
 
 export async function catalogoAvatares(): Promise<Avatar[]> {
-  return ok(await supabase.from('avatares').select('id, orden, clases_min, racha_min').order('orden')) as Avatar[];
+  return ok(await supabase.from('avatares').select('id, orden, precio_xp').order('orden')) as Avatar[];
 }
 
 export async function avataresDesbloqueados(perfilId: string): Promise<string[]> {
@@ -178,6 +185,10 @@ export async function avataresDesbloqueados(perfilId: string): Promise<string[]>
     await supabase.from('avatares_desbloqueados').select('avatar').eq('perfil_id', perfilId),
   ) as { avatar: string }[];
   return data.map((d) => d.avatar);
+}
+
+export async function comprarAvatar(perfilId: string, avatar: string): Promise<{ saldo: number; precio: number }> {
+  return ok(await supabase.rpc('comprar_avatar', { p_perfil: perfilId, p_avatar: avatar })) as { saldo: number; precio: number };
 }
 
 export async function elegirAvatar(perfilId: string, avatar: string) {

@@ -52,8 +52,8 @@ export default function Resumen() {
         <View style={styles.fila}>
           <Icon name="flame" size={28} color="#FF8A4C" fill="#FF8A4C" />
           <View>
-            <Text style={styles.dato}>Racha: {r.racha} {r.racha === 1 ? 'semana' : 'semanas'}</Text>
-            <Text style={styles.mut}>{r.racha > 1 ? '¡Una semana más!' : '¡Empieza tu racha!'}</Text>
+            <Text style={styles.dato}>Racha: {r.racha} {r.racha === 1 ? 'día' : 'días'}</Text>
+            <Text style={styles.mut}>{r.racha > 1 ? '¡Sigue así!' : '¡Empieza tu racha!'}</Text>
           </View>
         </View>
 
@@ -81,8 +81,8 @@ export default function Resumen() {
         )}
 
         <View style={{ gap: 6 }}>
-          <Text style={styles.mut}>Nivel {r.nivel_despues}: {r.xp_total % 250} / 250 XP</Text>
-          <BarraXp valor={(r.xp_total % 250) / 250} />
+          <Text style={styles.mut}>Nivel {r.nivel_despues}: {r.xp_total % r.xp_por_nivel} / {r.xp_por_nivel} XP</Text>
+          <BarraXp valor={(r.xp_total % r.xp_por_nivel) / r.xp_por_nivel} />
         </View>
       </Animated.View>
       <Button label="Seguir" variant="lime" onPress={seguir} />

@@ -53,13 +53,28 @@ El servidor de correo incluido en Supabase es solo para pruebas: envía pocos co
 
 ## Reglas del alumno (0005)
 
-Todas están en `migrations/0005_alumno.sql`, para poder ajustarlas en un solo sitio:
+Las constantes están al principio de las funciones de `migrations/0005_alumno.sql` y los precios en la tabla `avatares`, para ajustarlos sin tocar la app.
 
 | Regla | Valor inicial |
 |---|---|
-| XP por clase confirmada | 100, más 10 por cada semana de racha por encima de la primera (máx. +50) |
-| Nivel | 1 + XP / 250 |
-| Racha | semanas seguidas (lunes a domingo) con al menos una clase confirmada; sigue viva si la última es la semana actual o la anterior |
-| Avatares | 4 gratuitos; del 5 al 15 por clases confirmadas (5, 8, 10, 15, 20 … 50); 16-18 por racha (10, 20, 50 semanas) |
+| XP de una semana completa | 300 (se reparte entre las clases a las que está apuntado el alumno: 1 clase/semana = 300 por clase; 3 = 100; 5 = 60) |
+| Bonus de racha | +10 % por cada 7 días de racha, hasta +50 % |
+| Nivel | 1 + XP ganado / 1000 |
+| Racha | días naturales entre la primera y la última clase de una serie sin faltas. No la rompen clases canceladas, faltas justificadas, clases de hoy o por confirmar (14 días de plazo) ni clases anteriores a apuntarse al grupo |
+| Avatares | 2 gratuitos (`av01`, `av08`); el resto cuesta XP. Se pagan con el saldo (XP ganado − gastado); el nivel y el ranking no bajan |
+| Perfiles Mini (hasta 7 años) | no compran: desbloquean solos los avatares que alcanza su XP ganado |
 
-Para cambiar el XP por clase o el coste de un nivel, edita `confirmar_asistencia` y `nivel_de_xp`/`mi_progreso` (el 250 aparece en esas dos funciones).
+### Cambiar un precio
+
+En **SQL Editor**:
+
+```sql
+update public.avatares set precio_xp = 800 where id = 'av05';
+```
+
+Para ver todos: `select id, precio_xp from public.avatares order by orden;`.
+
+### Cambiar el XP por clase o el coste de un nivel
+
+- XP de una semana, bonus y tope: constantes `v_xp_semana`, `v_bonus_por_semana` y `v_bonus_max` en `confirmar_asistencia`.
+- XP por nivel: función `privado.xp_por_nivel()`.

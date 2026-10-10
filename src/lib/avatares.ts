@@ -1,6 +1,7 @@
+// GENERADO por scripts/avatares.mjs (npm run avatares). No editar a mano.
 import type { ImageSourcePropType } from 'react-native';
 
-// Miniaturas de los 18 avatares (220×220)
+// Miniaturas de los avatares (220×220)
 export const miniaturas: Record<string, ImageSourcePropType> = {
   av01: require('../../assets/avatares/av01.jpg'),
   av02: require('../../assets/avatares/av02.jpg'),
@@ -22,8 +23,8 @@ export const miniaturas: Record<string, ImageSourcePropType> = {
   av18: require('../../assets/avatares/av18.jpg'),
 };
 
-// Imágenes en cuerpo completo: de momento solo existen estas dos. Para el resto
-// se usa la miniatura (ver ImagenHeroe).
+// Imágenes en cuerpo completo (780×1036). Para los avatares que no aparecen aquí
+// se usa la miniatura dentro de un círculo (ver components/Heroe).
 export const heroes: Record<string, ImageSourcePropType> = {
   av01: require('../../assets/avatares/hero-01.jpg'),
   av08: require('../../assets/avatares/hero-08.jpg'),

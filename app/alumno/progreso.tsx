@@ -30,7 +30,7 @@ export default function Progreso() {
             <Card style={styles.dato}>
               <Icon name="flame" size={28} color="#FF8A4C" fill="#FF8A4C" />
               <Text style={styles.datoNum}>{p.racha}</Text>
-              <Text style={styles.datoTexto}>{p.racha === 1 ? 'semana de racha' : 'semanas de racha'}</Text>
+              <Text style={styles.datoTexto}>{p.racha === 1 ? 'día de racha' : 'días de racha'}</Text>
             </Card>
             <Card style={styles.dato}>
               <Icon name="check" size={28} color={colors.blue} strokeWidth={3} />
@@ -38,6 +38,18 @@ export default function Progreso() {
               <Text style={styles.datoTexto}>{p.clases === 1 ? 'clase asistida' : 'clases asistidas'}</Text>
             </Card>
           </View>
+
+          <Card>
+            <Text style={t.h3}>Avatares</Text>
+            <Text style={styles.mut}>
+              Tienes {p.saldo} XP para gastar.{' '}
+              {p.siguiente_avatar
+                ? p.siguiente_avatar.faltan > 0
+                  ? `Te faltan ${p.siguiente_avatar.faltan} XP para el siguiente.`
+                  : 'Ya puedes conseguir un avatar nuevo.'
+                : '¡Tienes todos los avatares!'}
+            </Text>
+          </Card>
 
           <Card>
             <Text style={t.h3}>Skills</Text>

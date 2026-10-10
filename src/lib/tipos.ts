@@ -39,13 +39,14 @@ export type Solicitud = {
 };
 
 export type Progreso = {
-  xp: number;
+  xp: number; // ganado en total (nivel y ranking)
+  saldo: number; // XP disponible para gastar en avatares
   nivel: number;
   xp_en_nivel: number;
   xp_por_nivel: number;
   clases: number;
-  racha: number;
-  clases_para_siguiente_avatar: number | null;
+  racha: number; // días
+  siguiente_avatar: { id: string; precio: number; faltan: number } | null;
 };
 
 export type GrupoAlumno = {
@@ -68,11 +69,12 @@ export type ResultadoConfirmacion = {
   xp_total: number;
   nivel_antes: number;
   nivel_despues: number;
-  racha: number;
+  racha: number; // días
+  xp_por_nivel: number;
   avatares_nuevos: string[];
 };
 
-export type Avatar = { id: string; orden: number; clases_min: number | null; racha_min: number | null };
+export type Avatar = { id: string; orden: number; precio_xp: number };
 
 export type EjercicioClase = {
   id: string;
