@@ -1,3 +1,4 @@
+import { View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 // Iconos del diseño (viewBox 24x24, trazo 2, extremos redondeados)
@@ -45,20 +46,22 @@ export type IconName = keyof typeof icons;
 type Props = { name: IconName; size?: number; color?: string; strokeWidth?: number };
 
 export function Icon({ name, size = 24, color = '#0F1D2E', strokeWidth = 2 }: Props) {
+  // Decorativo: oculto al lector de pantalla. Las props de accesibilidad van
+  // en un View porque Svg las pasa tal cual al DOM en web (aviso de React).
   return (
-    <Svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-    >
-      {icons[name]}
-    </Svg>
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {icons[name]}
+      </Svg>
+    </View>
   );
 }
