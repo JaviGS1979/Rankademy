@@ -2,7 +2,7 @@
 
 ## Aplicar las migraciones (primera vez)
 
-Atajo: en un proyecto vacío basta con ejecutar `instalar_todo.sql`, que une las cinco migraciones en orden (es un archivo generado; las fuentes son las de `migrations/`).
+Atajo: en un proyecto vacío basta con ejecutar `instalar_todo.sql`, que une todas las migraciones en orden (es un archivo generado; las fuentes son las de `migrations/`).
 
 En el panel de Supabase → **SQL Editor** → **New query**. Pega y ejecuta (**Run**), **en este orden**, el contenido de:
 
@@ -78,3 +78,13 @@ Para ver todos: `select id, nombre, precio_xp from public.avatares order by orde
 
 - XP de una semana, bonus y tope: constantes `v_xp_semana`, `v_bonus_por_semana` y `v_bonus_max` en `confirmar_asistencia`.
 - XP por nivel: función `privado.xp_por_nivel()`.
+
+## Horario y lista (0006)
+
+- **Clases según el horario.** Las clases que tocan salen del día de la semana de cada grupo. Una sesión solo puede existir en un día del horario (`sesion_para`), desde 14 días atrás hasta 60 adelante. El día de un grupo no se cambia: otro día = otro grupo. Los grupos se archivan (`archivado_at`), no se borran.
+- **Faltas.** Solo cuentan si se pasó lista ese día (clase impartida o con alguna asistencia marcada) y el alumno no estaba. Tampoco cuentan las faltas justificadas, las clases canceladas ni las anteriores a apuntarse. Si la familia no confirma una asistencia en 14 días, cuenta como falta.
+- **Pasar lista** (`marcar_asistencia`: presente, justificada o desmarcar): solo el entrenador del grupo y el director, el mismo día o hasta 14 días después, y nunca sobre una asistencia ya confirmada por la familia. `cerrar_lista` deja la clase como impartida.
+- **Cancelar** una clase (`cancelar_clase`, `reactivar_clase`) o un día entero de la escuela (`cancelar_dia`, solo el director).
+- **Alumnos de la escuela.** El director da de alta alumnos sin cuenta familiar (`alta_alumno`). Cada uno tiene un código de 8 caracteres que solo ve el director (`codigo_alumno`). La familia lo introduce (`vincular_alumno`) y da su consentimiento; hasta entonces no gana XP.
+- **Códigos.** Máximo 10 intentos fallidos por hora y persona (de escuela y de alumno).
+- **Escrituras cerradas.** Sesiones, asistencias, inscripciones y membresías ya no se escriben directamente: solo con las funciones anteriores, `inscribir`/`desinscribir`, `resolver_membresia` y `dejar_escuela`.

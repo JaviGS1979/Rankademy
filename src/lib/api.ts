@@ -46,20 +46,30 @@ export async function crearEscuela(nombre: string, ciudad: string): Promise<Escu
 }
 
 export async function unirseAEscuela(codigo: string, rol: Exclude<Rol, 'director'>, perfilId?: string) {
-  ok(
+  const membresia = ok(
     await supabase.rpc('unirse_a_escuela', {
       p_codigo: codigo,
       p_rol: rol,
       p_perfil: perfilId ?? null,
     }),
   );
+  // Con un código que no existe la base de datos devuelve vacío (y cuenta el intento)
+  if (!membresia || (typeof membresia === 'object' && !(membresia as { id?: string }).id)) {
+    throw new Error('Código de escuela no válido');
+  }
 }
 
 export async function misMembresias(): Promise<MiMembresia[]> {
+  // Solo las propias (y las de mis hijos, que van a mi nombre): el director puede
+  // leer las de toda su escuela, pero esas no son "mis escuelas"
+  const { data: sesion } = await supabase.auth.getSession();
+  const uid = sesion.session?.user.id;
+  if (!uid) return [];
   const data = ok(
     await supabase
       .from('membresias')
       .select('id, rol, estado, perfil_id, escuela:escuelas(id, nombre, ciudad, codigo), perfil:perfiles_alumno(nombre)')
+      .eq('persona_id', uid)
       .neq('estado', 'baja')
       .order('creada_at'),
   );
@@ -133,7 +143,8 @@ export async function gruposDelAlumno(perfilId: string): Promise<GrupoAlumno[]> 
     await supabase
       .from('inscripciones')
       .select('grupo:grupos(id, nombre, dia, hora, escuela:escuelas(nombre), entrenador:personas(nombre))')
-      .eq('perfil_id', perfilId),
+      .eq('perfil_id', perfilId)
+      .is('hasta', null),
   ) as unknown as { grupo: GrupoAlumno | null }[];
   return data.map((d) => d.grupo).filter((g): g is GrupoAlumno => !!g);
 }

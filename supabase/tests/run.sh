@@ -10,4 +10,4 @@ for f in tests/00_simular_supabase.sql migrations/*.sql tests/10_seguridad.sql; 
   [[ $f == tests/10_seguridad.sql ]] && continue
   su postgres -c "psql -q -v ON_ERROR_STOP=1 -d $DB" < "$f" >/dev/null
 done
-su postgres -c "psql -q -tA -v ON_ERROR_STOP=1 -d $DB -f $PWD/tests/10_seguridad.sql" | grep -v '^$' | grep -v '^t$' | grep -v '^f$' | grep -v '^{' || true
+su postgres -c "psql -q -tA -v ON_ERROR_STOP=1 -d $DB -f $PWD/tests/10_seguridad.sql" | grep -v '^$' | grep -v '^t$' | grep -v '^f$' | grep -v '^{' | grep -Ev '^[0-9a-f-]{36}$' || true
