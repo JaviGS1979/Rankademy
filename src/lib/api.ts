@@ -1,8 +1,9 @@
 import { supabase } from './supabase';
 import { hoyISO } from './fechas';
 import type {
-  Avatar, ClaseConEjercicios, Escuela, EstadoEscuelaPerfil, GrupoAlumno, MiMembresia, Nivel, Pendiente,
-  Perfil, Progreso, ResultadoConfirmacion, Rol, Solicitud,
+  AlumnoEscuela, Avatar, ClaseConEjercicios, EntrenadorEscuela, Escuela, EscuelaStaff, EstadoEscuelaPerfil,
+  FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
+  Rol, RolStaff, SesionDia, Solicitud,
 } from './tipos';
 
 function ok<T>(r: { data: T; error: unknown }): T {
@@ -142,11 +143,11 @@ export async function gruposDelAlumno(perfilId: string): Promise<GrupoAlumno[]> 
   const data = ok(
     await supabase
       .from('inscripciones')
-      .select('grupo:grupos(id, nombre, dia, hora, escuela:escuelas(nombre), entrenador:personas(nombre))')
+      .select('grupo:grupos(id, nombre, dia, hora, archivado_at, escuela:escuelas(nombre), entrenador:personas(nombre))')
       .eq('perfil_id', perfilId)
       .is('hasta', null),
-  ) as unknown as { grupo: GrupoAlumno | null }[];
-  return data.map((d) => d.grupo).filter((g): g is GrupoAlumno => !!g);
+  ) as unknown as { grupo: (GrupoAlumno & { archivado_at: string | null }) | null }[];
+  return data.map((d) => d.grupo).filter((g): g is GrupoAlumno & { archivado_at: string | null } => !!g && !g.archivado_at);
 }
 
 // Estado de las escuelas del perfil (para avisar si aún espera la aprobación)
@@ -240,4 +241,227 @@ export async function ejerciciosDeLaClase(perfilId: string): Promise<ClaseConEje
       .filter((e): e is NonNullable<typeof e> => !!e)
       .map((e) => ({ ...e, imagenes: e.imagenes.length })),
   };
+}
+
+// ---------- Familia: vincular un alumno que la escuela ya inscribió ----------
+export async function vincularAlumno(codigo: string, acepto: boolean): Promise<{ perfil_id: string; nombre: string }> {
+  const r = ok(await supabase.rpc('vincular_alumno', { p_codigo: codigo, p_acepto: acepto }));
+  // Con un código que no existe la base de datos devuelve vacío (y cuenta el intento)
+  if (!r || typeof r !== 'object' || !(r as { perfil_id?: string }).perfil_id) {
+    throw new Error('Código de alumno no válido');
+  }
+  return r as { perfil_id: string; nombre: string };
+}
+
+// ---------- Director y entrenador ----------
+async function miId(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
+export async function miNombre(): Promise<string> {
+  const uid = await miId();
+  if (!uid) return '';
+  const data = ok(await supabase.from('personas').select('nombre').eq('id', uid).maybeSingle()) as { nombre: string } | null;
+  return data?.nombre ?? '';
+}
+
+// Escuelas donde tengo un rol de director o de entrenador ya aprobado
+export async function misEscuelasStaff(): Promise<EscuelaStaff[]> {
+  const uid = await miId();
+  if (!uid) return [];
+  const data = ok(
+    await supabase
+      .from('membresias')
+      .select('rol, escuela:escuelas(id, nombre, ciudad, codigo, participa_ranking)')
+      .eq('persona_id', uid)
+      .eq('estado', 'activa')
+      .in('rol', ['director', 'entrenador'])
+      .order('creada_at'),
+  ) as unknown as { rol: RolStaff; escuela: Omit<EscuelaStaff, 'rol'> | null }[];
+  const porEscuela = new Map<string, EscuelaStaff>();
+  for (const d of data) {
+    if (!d.escuela) continue;
+    const previa = porEscuela.get(d.escuela.id);
+    // Si es director y entrenador a la vez, cuenta como director
+    if (!previa || d.rol === 'director') porEscuela.set(d.escuela.id, { ...d.escuela, rol: d.rol });
+  }
+  return [...porEscuela.values()];
+}
+
+export async function gruposDeEscuela(escuelaId: string): Promise<GrupoEscuela[]> {
+  const grupos = ok(
+    await supabase
+      .from('grupos')
+      .select('id, nombre, dia, hora, pista, entrenador_id, entrenador:personas(nombre)')
+      .eq('escuela_id', escuelaId)
+      .is('archivado_at', null)
+      .order('dia')
+      .order('hora'),
+  ) as unknown as Omit<GrupoEscuela, 'alumnos'>[];
+  if (grupos.length === 0) return [];
+  const ins = ok(
+    await supabase.from('inscripciones').select('grupo_id').in('grupo_id', grupos.map((g) => g.id)).is('hasta', null),
+  ) as { grupo_id: string }[];
+  const cuenta = new Map<string, number>();
+  for (const i of ins) cuenta.set(i.grupo_id, (cuenta.get(i.grupo_id) ?? 0) + 1);
+  return grupos.map((g) => ({ ...g, alumnos: cuenta.get(g.id) ?? 0 }));
+}
+
+export async function crearGrupo(g: {
+  escuelaId: string; nombre: string; dia: number; hora: string; pista: string; entrenadorId: string | null;
+}) {
+  ok(
+    await supabase.from('grupos').insert({
+      escuela_id: g.escuelaId,
+      nombre: g.nombre.trim(),
+      dia: g.dia,
+      hora: g.hora,
+      pista: g.pista.trim(),
+      entrenador_id: g.entrenadorId,
+    }),
+  );
+}
+
+export async function actualizarGrupo(
+  id: string,
+  cambios: { nombre?: string; hora?: string; pista?: string; entrenador_id?: string | null; archivado_at?: string },
+) {
+  const { data, error } = await supabase.from('grupos').update(cambios).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('No se pudo guardar el grupo');
+}
+
+export async function entrenadoresDeEscuela(escuelaId: string): Promise<EntrenadorEscuela[]> {
+  const [membresias, grupos] = await Promise.all([
+    supabase
+      .from('membresias')
+      .select('id, persona_id, persona:personas(nombre)')
+      .eq('escuela_id', escuelaId)
+      .eq('rol', 'entrenador')
+      .eq('estado', 'activa')
+      .order('creada_at'),
+    gruposDeEscuela(escuelaId),
+  ]);
+  const data = ok(membresias) as unknown as { id: string; persona_id: string; persona: { nombre: string } | null }[];
+  return data.map((m) => ({
+    membresia_id: m.id,
+    persona_id: m.persona_id,
+    nombre: m.persona?.nombre || 'Sin nombre',
+    grupos: grupos.filter((g) => g.entrenador_id === m.persona_id).map((g) => g.nombre),
+  }));
+}
+
+export async function alumnosDeEscuela(escuelaId: string): Promise<AlumnoEscuela[]> {
+  const [membresias, grupos] = await Promise.all([
+    supabase
+      .from('membresias')
+      .select('id, perfil_id, perfil:perfiles_alumno(nombre, apellidos, anio_nacimiento, familia_id)')
+      .eq('escuela_id', escuelaId)
+      .eq('rol', 'alumno')
+      .eq('estado', 'activa'),
+    gruposDeEscuela(escuelaId),
+  ]);
+  const data = ok(membresias) as unknown as {
+    id: string;
+    perfil_id: string;
+    perfil: { nombre: string; apellidos: string | null; anio_nacimiento: number; familia_id: string | null } | null;
+  }[];
+  const ins = grupos.length
+    ? (ok(
+        await supabase.from('inscripciones').select('perfil_id, grupo_id').in('grupo_id', grupos.map((g) => g.id)).is('hasta', null),
+      ) as { perfil_id: string; grupo_id: string }[])
+    : [];
+  return data
+    .filter((m) => m.perfil)
+    .map((m) => ({
+      membresia_id: m.id,
+      perfil_id: m.perfil_id,
+      nombre: m.perfil!.nombre,
+      apellidos: m.perfil!.apellidos ?? '',
+      anio_nacimiento: m.perfil!.anio_nacimiento,
+      sin_familia: m.perfil!.familia_id === null,
+      grupos: ins
+        .filter((i) => i.perfil_id === m.perfil_id)
+        .map((i) => grupos.find((g) => g.id === i.grupo_id))
+        .filter((g): g is GrupoEscuela => !!g)
+        .map((g) => ({ id: g.id, nombre: g.nombre })),
+    }))
+    .sort((a, b) => `${a.nombre} ${a.apellidos}`.localeCompare(`${b.nombre} ${b.apellidos}`, 'es'));
+}
+
+export async function darDeBaja(membresiaId: string) {
+  ok(await supabase.rpc('resolver_membresia', { p_membresia: membresiaId, p_aprobar: false }));
+}
+
+export async function altaAlumno(a: {
+  escuelaId: string; nombre: string; apellidos: string; anio: number; grupos: string[];
+}): Promise<{ perfil_id: string; codigo: string }> {
+  return ok(
+    await supabase.rpc('alta_alumno', {
+      p_escuela: a.escuelaId,
+      p_nombre: a.nombre,
+      p_apellidos: a.apellidos,
+      p_anio: a.anio,
+      p_grupos: a.grupos,
+    }),
+  ) as { perfil_id: string; codigo: string };
+}
+
+export async function codigoAlumno(perfilId: string, nuevo = false): Promise<string> {
+  return ok(await supabase.rpc('codigo_alumno', { p_perfil: perfilId, p_nuevo: nuevo })) as string;
+}
+
+export async function inscribir(perfilId: string, grupoId: string) {
+  ok(await supabase.rpc('inscribir', { p_perfil: perfilId, p_grupo: grupoId }));
+}
+
+export async function desinscribir(perfilId: string, grupoId: string) {
+  ok(await supabase.rpc('desinscribir', { p_perfil: perfilId, p_grupo: grupoId }));
+}
+
+export async function ajustarRanking(escuelaId: string, participa: boolean) {
+  const { data, error } = await supabase
+    .from('escuelas')
+    .update({ participa_ranking: participa })
+    .eq('id', escuelaId)
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('No se pudo cambiar el ajuste');
+}
+
+// ---------- Clases y lista ----------
+export async function sesionesDelDia(grupoIds: string[], fecha: string): Promise<SesionDia[]> {
+  if (grupoIds.length === 0) return [];
+  return ok(
+    await supabase.from('sesiones').select('id, grupo_id, fecha, estado').in('grupo_id', grupoIds).eq('fecha', fecha),
+  ) as SesionDia[];
+}
+
+export async function sesionPara(grupoId: string, fecha: string): Promise<string> {
+  return ok(await supabase.rpc('sesion_para', { p_grupo: grupoId, p_fecha: fecha })) as string;
+}
+
+export async function cancelarClase(grupoId: string, fecha: string) {
+  ok(await supabase.rpc('cancelar_clase', { p_grupo: grupoId, p_fecha: fecha }));
+}
+
+export async function reactivarClase(sesionId: string) {
+  ok(await supabase.rpc('reactivar_clase', { p_sesion: sesionId }));
+}
+
+export async function cancelarDia(escuelaId: string, fecha: string): Promise<number> {
+  return ok(await supabase.rpc('cancelar_dia', { p_escuela: escuelaId, p_fecha: fecha })) as number;
+}
+
+export async function cerrarLista(sesionId: string) {
+  ok(await supabase.rpc('cerrar_lista', { p_sesion: sesionId }));
+}
+
+export async function marcarAsistencia(sesionId: string, perfilId: string, estado: 'presente' | 'justificada' | 'ninguno') {
+  ok(await supabase.rpc('marcar_asistencia', { p_sesion: sesionId, p_perfil: perfilId, p_estado: estado }));
+}
+
+export async function listaDeClase(sesionId: string): Promise<FilaLista[]> {
+  return ok(await supabase.rpc('lista_de_clase', { p_sesion: sesionId })) as FilaLista[];
 }

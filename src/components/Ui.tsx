@@ -39,10 +39,11 @@ export function Tag({ texto, tipo = 'azul' }: { texto: string; tipo?: TagTipo })
   );
 }
 
-export function Chip({ texto, on, onPress }: { texto: string; on?: boolean; onPress: () => void }) {
+export function Chip({ texto, on, onPress, etiqueta }: { texto: string; on?: boolean; onPress: () => void; etiqueta?: string }) {
   return (
     <Pressable
       accessibilityRole="radio"
+      accessibilityLabel={etiqueta ?? texto}
       accessibilityState={{ selected: !!on }}
       onPress={() => {
         Haptics.selectionAsync().catch(() => {});

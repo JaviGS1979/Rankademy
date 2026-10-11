@@ -70,3 +70,46 @@ export const hoyISO = (ahora = new Date()) =>
 export function edad(anioNacimiento: number, ahora = new Date()) {
   return ahora.getFullYear() - anioNacimiento;
 }
+
+// 1 = lunes … 7 = domingo
+export const diaSemana = (d = new Date()) => (d.getDay() === 0 ? 7 : d.getDay());
+
+// '2026-10-09' como fecha local (sin desfase por zona horaria)
+export function deISO(fecha: string): Date {
+  const [y, m, d] = fecha.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Fechas (ISO) en las que un grupo de ese día da clase: las `atras` anteriores a la
+// de hoy o la próxima y las `adelante` siguientes. Con atras = 2 nunca pasa de 14 días
+// hacia atrás, que es el plazo para corregir una lista.
+export function ocurrenciasDelGrupo(dia: number, ahora = new Date(), atras = 2, adelante = 3): string[] {
+  const base = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  base.setDate(base.getDate() + ((dia - diaSemana(ahora) + 7) % 7));
+  const fechas: string[] = [];
+  for (let i = -atras; i < adelante; i++) {
+    const f = new Date(base);
+    f.setDate(base.getDate() + 7 * i);
+    fechas.push(hoyISO(f));
+  }
+  return fechas;
+}
+
+// "Hoy", "Mañana", "Ayer" o "Lunes 5"
+export function etiquetaFecha(fecha: string, ahora = new Date()): string {
+  const f = deISO(fecha);
+  const manana = new Date(ahora);
+  manana.setDate(manana.getDate() + 1);
+  if (mismaFecha(f, manana)) return 'Mañana';
+  return etiquetaSesion(fecha, ahora);
+}
+
+// "17:00" → minutos desde medianoche; null si no es una hora válida
+export function horaValida(texto: string): string | null {
+  const m = /^(\d{1,2})[:.hH]?(\d{2})$/.exec(texto.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}

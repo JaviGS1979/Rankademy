@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Aviso, Button, Card, Cargando, Icon, Iniciales, Screen, Tag } from '@/components';
+import { Aviso, Button, Card, Cargando, CodigoCaja, Iniciales, Screen, Tag } from '@/components';
+import { SolicitudFila } from '@/features/escuela/SolicitudFila';
 import { cerrarSesion, misMembresias, resolverSolicitud, solicitudesPendientes } from '@/lib/api';
-import { avisar, confirmar } from '@/lib/avisar';
+import { confirmar } from '@/lib/avisar';
 import { mensajeError } from '@/lib/errores';
 import type { MiMembresia, Rol, Solicitud } from '@/lib/tipos';
 import { colors, fonts, type as t } from '@/theme';
@@ -91,18 +92,29 @@ export default function MisEscuelas() {
               {m.estado === 'activa' ? <Tag texto="Activa" tipo="lima" /> : <Tag texto="Pendiente" tipo="naranja" />}
             </View>
             {m.rol === 'director' && m.estado === 'activa' && (
-              <CodigoEscuela nombre={m.escuela.nombre} codigo={m.escuela.codigo} />
+              <CodigoCaja
+                etiqueta="Código para compartir"
+                codigo={m.escuela.codigo}
+                mensaje={`Únete a ${m.escuela.nombre} en Rankademy con el código ${m.escuela.codigo}`}
+                tituloAviso="Código de tu escuela"
+              />
+            )}
+            {(m.rol === 'director' || m.rol === 'entrenador') && m.estado === 'activa' && (
+              <Button label="Abrir la escuela" variant="dark" small onPress={() => router.push('/escuela')} />
             )}
           </Card>
 
           {(solicitudes[m.escuela.id] ?? []).map((s) => (
-            <SolicitudFila key={s.id} s={s} onResolver={resolver} />
+            <View key={s.id} style={{ marginLeft: 16 }}>
+              <SolicitudFila s={s} onResolver={resolver} />
+            </View>
           ))}
         </View>
       ))}
 
       <Button label="Añadir otra escuela" variant="dark" onPress={() => router.push('/anadir-escuela')} />
       <Button label="Crear una escuela" variant="ghost" onPress={() => router.push('/crear-escuela')} />
+      <Button label="Tengo un código de alumno" variant="ghost" onPress={() => router.push('/vincular-alumno')} />
 
       <Card>
         <Text style={styles.label}>Cómo cuentan tus puntos</Text>
@@ -118,81 +130,14 @@ export default function MisEscuelas() {
   );
 }
 
-function CodigoEscuela({ nombre, codigo }: { nombre: string; codigo: string }) {
-  const compartir = async () => {
-    const mensaje = `Únete a ${nombre} en Rankademy con el código ${codigo}`;
-    if (Platform.OS === 'web' && !(navigator as Navigator & { share?: unknown }).share) {
-      return avisar('Código de tu escuela', mensaje);
-    }
-    try {
-      await Share.share({ message: mensaje });
-    } catch {
-      avisar('Código de tu escuela', mensaje);
-    }
-  };
-  return (
-    <View style={styles.codigoCaja}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.label, { color: colors.muted }]}>Código para compartir</Text>
-        <Text style={styles.codigo} accessibilityLabel={`Código ${codigo.split('').join(' ')}`} selectable>
-          {codigo}
-        </Text>
-      </View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Compartir código" onPress={compartir} style={styles.compartir}>
-        <Icon name="share" color={colors.ink} />
-      </Pressable>
-    </View>
-  );
-}
-
-function SolicitudFila({ s, onResolver }: { s: Solicitud; onResolver: (s: Solicitud, aprobar: boolean) => void }) {
-  const quien = s.perfil
-    ? `${s.perfil.nombre} · ${new Date().getFullYear() - s.perfil.anio_nacimiento} años`
-    : s.persona?.nombre || 'Sin nombre';
-  const detalle = s.perfil ? `Alumno · familia de ${s.persona?.nombre || '—'}` : nombreRol[s.rol];
-  return (
-    <View style={styles.solicitud}>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.nombreSm}>{quien}</Text>
-        <Text style={styles.mut}>Pide entrar · {detalle}</Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Rechazar a ${quien}`}
-        onPress={() => confirmar('Rechazar solicitud', `¿Rechazar a ${quien}?`, 'Rechazar', () => onResolver(s, false))}
-        style={[styles.accion, { borderColor: colors.line }]}
-      >
-        <Icon name="close" color={colors.ink2} />
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Aprobar a ${quien}`}
-        onPress={() => onResolver(s, true)}
-        style={[styles.accion, { backgroundColor: colors.lime, borderColor: colors.lime }]}
-      >
-        <Icon name="check" color={colors.ink} strokeWidth={3} />
-      </Pressable>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   nombre: { fontFamily: fonts.display, fontSize: 22, color: colors.ink, textTransform: 'uppercase' },
-  nombreSm: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
   mut: { fontFamily: fonts.body, fontSize: 14, color: colors.ink2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   destacada: { borderColor: colors.lime, borderWidth: 2 },
   label: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.96, textTransform: 'uppercase', color: colors.ink2 },
   punto: { fontFamily: fonts.body, fontSize: 15, color: colors.ink },
-  codigoCaja: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.ink, borderRadius: 16, padding: 14 },
-  codigo: { fontFamily: fonts.display, fontSize: 34, letterSpacing: 4, color: colors.lime },
-  compartir: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' },
-  solicitud: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.line, borderRadius: 16, padding: 12, marginLeft: 16,
-  },
-  accion: { width: 44, height: 44, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   salir: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   salirText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.orange },
 });

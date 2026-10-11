@@ -75,6 +75,8 @@ function Navegacion() {
         <Stack.Screen name="crear-escuela" />
         <Stack.Screen name="anadir-escuela" />
         <Stack.Screen name="anadir-hijo" />
+        <Stack.Screen name="vincular-alumno" />
+        <Stack.Screen name="escuela" />
       </Stack.Protected>
       {/* Durante el cambio de "sin sesión" a "con sesión" */}
       <Stack.Screen name="verificar" />

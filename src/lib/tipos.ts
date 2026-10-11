@@ -93,3 +93,51 @@ export type ClaseConEjercicios = {
 };
 
 export type EstadoEscuelaPerfil = { escuela: string; estado: EstadoMembresia };
+
+// ---------- Escuela (director y entrenador) ----------
+export type RolStaff = 'director' | 'entrenador';
+
+export type EscuelaStaff = {
+  id: string;
+  nombre: string;
+  ciudad: string;
+  codigo: string;
+  participa_ranking: boolean;
+  rol: RolStaff; // director si lo es en esa escuela, aunque también sea entrenador
+};
+
+export type GrupoEscuela = {
+  id: string;
+  nombre: string;
+  dia: number;
+  hora: string;
+  pista: string;
+  entrenador_id: string | null;
+  entrenador: { nombre: string } | null;
+  alumnos: number;
+};
+
+export type EntrenadorEscuela = { membresia_id: string; persona_id: string; nombre: string; grupos: string[] };
+
+export type AlumnoEscuela = {
+  membresia_id: string;
+  perfil_id: string;
+  nombre: string;
+  apellidos: string;
+  anio_nacimiento: number;
+  sin_familia: boolean; // dado de alta por la escuela y aún sin vincular
+  grupos: { id: string; nombre: string }[];
+};
+
+export type SesionDia = { id: string; grupo_id: string; fecha: string; estado: 'planificada' | 'impartida' | 'cancelada' };
+
+export type EstadoAsistencia = 'presente' | 'justificada' | 'confirmada' | null;
+
+export type FilaLista = {
+  perfil_id: string;
+  nombre: string;
+  apellidos: string;
+  avatar: string | null;
+  inscrito: boolean;
+  estado: EstadoAsistencia;
+};

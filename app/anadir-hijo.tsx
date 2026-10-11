@@ -7,16 +7,11 @@ import { crearPerfil, unirseAEscuela } from '@/lib/api';
 import { mensajeError } from '@/lib/errores';
 import { usePerfiles } from '@/lib/perfil';
 import { avisar } from '@/lib/avisar';
+import { TEXTO_CONSENTIMIENTO } from '@/lib/textos';
 import { colors, fonts } from '@/theme';
 
 const EDAD_MIN = 3;
 const EDAD_MAX = 17;
-
-// Texto provisional: pendiente de revisión legal antes del lanzamiento.
-const TEXTO_CONSENTIMIENTO =
-  'Como adulto responsable, autorizo a Rankademy a tratar el nombre o alias y el año de nacimiento de este menor ' +
-  'para registrar su asistencia a clase, su progreso y, si lo permito, su posición en los rankings con nombre de pila ' +
-  'o alias y avatar (nunca foto real). Puedo retirar el perfil del ranking o borrarlo en cualquier momento.';
 
 export default function AnadirHijo() {
   const router = useRouter();
@@ -96,6 +91,9 @@ export default function AnadirHijo() {
 
       <Aviso texto={error} />
       <Button label="Añadir hijo" variant="lime" onPress={guardar} cargando={enviando} />
+      <Pressable accessibilityRole="link" onPress={() => router.push('/vincular-alumno')} style={styles.enlace}>
+        <Text style={styles.link}>¿La escuela ya lo inscribió? Vincúlalo con su código</Text>
+      </Pressable>
     </Screen>
   );
 }
@@ -104,5 +102,6 @@ const styles = StyleSheet.create({
   nota: { fontFamily: fonts.body, fontSize: 14, color: colors.ink2 },
   consent: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.line, padding: 14 },
   consentText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.ink },
+  enlace: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   link: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.blue, textDecorationLine: 'underline' },
 });

@@ -59,6 +59,9 @@ export default function SelectorPerfil() {
         <Pressable accessibilityRole="link" onPress={() => router.push('/mis-escuelas')} style={styles.enlace}>
           <Text style={styles.enlaceText}>Mis escuelas</Text>
         </Pressable>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/vincular-alumno')} style={styles.enlace}>
+          <Text style={styles.enlaceText}>Tengo un código de alumno</Text>
+        </Pressable>
         <Pressable accessibilityRole="button" onPress={() => cerrarSesion().catch(() => {})} style={styles.enlace}>
           <Text style={[styles.enlaceText, { color: colors.orange }]}>Cerrar sesión</Text>
         </Pressable>

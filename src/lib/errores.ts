@@ -23,3 +23,10 @@ export const normalizarCodigo = (c: string) => {
   return limpio.length > 3 ? `${limpio.slice(0, 3)}-${limpio.slice(3)}` : limpio;
 };
 export const codigoValido = (c: string) => /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/.test(c);
+
+// Código de alumno que da la escuela a la familia: AAAA-9999
+export const normalizarCodigoAlumno = (c: string) => {
+  const limpio = c.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  return limpio.length > 4 ? `${limpio.slice(0, 4)}-${limpio.slice(4)}` : limpio;
+};
+export const codigoAlumnoValido = (c: string) => /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/.test(c);
