@@ -46,6 +46,8 @@ create table privado.intentos_codigo (
   creado_at timestamptz not null default now()
 );
 create index on privado.intentos_codigo (persona_id, creado_at);
+-- Solo la usan las funciones internas; nadie puede leerla desde la app.
+alter table privado.intentos_codigo enable row level security;
 
 create function privado.comprobar_intentos()
 returns void language plpgsql security definer set search_path = '' as $$
