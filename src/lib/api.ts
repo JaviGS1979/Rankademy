@@ -1,9 +1,9 @@
 import { supabase } from './supabase';
 import { hoyISO } from './fechas';
 import type {
-  AlumnoEscuela, Avatar, ClaseConEjercicios, DetalleEjercicio, EjercicioClase, Elemento, EntrenadorEscuela, Escuela,
-  EscuelaStaff, EstadoEscuelaPerfil, FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
-  Parecido, ResumenEjercicio, Rol, RolStaff, SesionDia, Solicitud,
+  AlumnoEscuela, AmbitoRanking, Anomalia, Avatar, ClaseConEjercicios, DetalleEjercicio, EjercicioClase, Elemento, EntrenadorEscuela, Escuela,
+  EscuelaStaff, EstadoEscuelaPerfil, EstadoRanking, FilaAlumnoRanking, FilaEntrenadorRanking, FilaEscuelaRanking, FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
+  Parecido, PerfilEntrenador, ResumenEjercicio, Rol, RolStaff, SesionDia, Solicitud,
 } from './tipos';
 
 function ok<T>(r: { data: T; error: unknown }): T {
@@ -40,9 +40,11 @@ export async function cerrarSesion() {
 }
 
 // ---------- Escuelas y membresías ----------
-export async function crearEscuela(nombre: string, ciudad: string): Promise<Escuela> {
+export async function crearEscuela(nombre: string, ciudad: string, provincia = '', comunidad = ''): Promise<Escuela> {
   return ok(
-    await supabase.rpc('crear_escuela', { p_nombre: nombre, p_ciudad: ciudad }).single(),
+    await supabase
+      .rpc('crear_escuela', { p_nombre: nombre, p_ciudad: ciudad, p_provincia: provincia, p_comunidad: comunidad })
+      .single(),
   ) as Escuela;
 }
 
@@ -155,11 +157,11 @@ export async function escuelasDelPerfil(perfilId: string): Promise<EstadoEscuela
   const data = ok(
     await supabase
       .from('membresias')
-      .select('estado, escuela:escuelas(nombre)')
+      .select('estado, escuela:escuelas(id, nombre)')
       .eq('perfil_id', perfilId)
       .neq('estado', 'baja'),
-  ) as unknown as { estado: EstadoEscuelaPerfil['estado']; escuela: { nombre: string } | null }[];
-  return data.map((d) => ({ estado: d.estado, escuela: d.escuela?.nombre ?? '' }));
+  ) as unknown as { estado: EstadoEscuelaPerfil['estado']; escuela: { id: string; nombre: string } | null }[];
+  return data.map((d) => ({ estado: d.estado, id: d.escuela?.id ?? '', escuela: d.escuela?.nombre ?? '' }));
 }
 
 // Clases que el entrenador ha marcado y el alumno aún no ha confirmado
@@ -256,7 +258,7 @@ export async function misEscuelasStaff(): Promise<EscuelaStaff[]> {
   const data = ok(
     await supabase
       .from('membresias')
-      .select('rol, escuela:escuelas(id, nombre, ciudad, codigo, participa_ranking)')
+      .select('rol, escuela:escuelas(id, nombre, ciudad, codigo, participa_ranking, provincia, comunidad)')
       .eq('persona_id', uid)
       .eq('estado', 'activa')
       .in('rol', ['director', 'entrenador'])
@@ -580,4 +582,45 @@ export async function ejerciciosDeClase(sesionId: string): Promise<EjercicioClas
 
 export async function guardarEjerciciosClase(sesionId: string, ids: string[]) {
   ok(await supabase.rpc('guardar_ejercicios_clase', { p_sesion: sesionId, p_ejercicios: ids }));
+}
+
+// ---------- Rankings ----------
+export async function estadoRanking(escuelaId: string): Promise<EstadoRanking> {
+  return ok(await supabase.rpc('estado_ranking', { p_escuela: escuelaId })) as EstadoRanking;
+}
+
+export async function rankingAlumnos(
+  escuelaId: string, ambito: AmbitoRanking, edad: { min: number; max: number } | null,
+): Promise<FilaAlumnoRanking[]> {
+  return ok(
+    await supabase.rpc('ranking_alumnos', {
+      p_escuela: escuelaId, p_ambito: ambito, p_edad_min: edad?.min ?? null, p_edad_max: edad?.max ?? null,
+    }),
+  ) as FilaAlumnoRanking[];
+}
+
+export async function rankingEntrenadores(escuelaId: string, ambito: AmbitoRanking): Promise<FilaEntrenadorRanking[]> {
+  return ok(await supabase.rpc('ranking_entrenadores', { p_escuela: escuelaId, p_ambito: ambito })) as FilaEntrenadorRanking[];
+}
+
+export async function rankingEscuelas(escuelaId: string, ambito: Exclude<AmbitoRanking, 'escuela'>): Promise<FilaEscuelaRanking[]> {
+  return ok(await supabase.rpc('ranking_escuelas', { p_escuela: escuelaId, p_ambito: ambito })) as FilaEscuelaRanking[];
+}
+
+export async function perfilEntrenador(id: string): Promise<PerfilEntrenador> {
+  return ok(await supabase.rpc('perfil_entrenador', { p_persona: id })) as PerfilEntrenador;
+}
+
+export async function anomalias(escuelaId: string): Promise<Anomalia[]> {
+  return ok(await supabase.rpc('anomalias', { p_escuela: escuelaId })) as Anomalia[];
+}
+
+export async function actualizarZona(escuelaId: string, provincia: string, comunidad: string) {
+  const { data, error } = await supabase
+    .from('escuelas')
+    .update({ provincia: provincia.trim(), comunidad: comunidad.trim() })
+    .eq('id', escuelaId)
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('No se pudo guardar la zona');
 }

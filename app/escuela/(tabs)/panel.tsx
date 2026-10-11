@@ -1,12 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Aviso, Button, Card, Cargando, CodigoCaja, Iniciales, Screen, Tag } from '@/components';
+import { Aviso, Button, Card, Cargando, CodigoCaja, Field, Iniciales, Screen, Tag } from '@/components';
 import { SelectorEscuela } from '@/features/escuela/SelectorEscuela';
-import { ajustarRanking, alumnosDeEscuela, entrenadoresDeEscuela, solicitudesPendientes } from '@/lib/api';
+import {
+  actualizarZona, ajustarRanking, alumnosDeEscuela, anomalias, entrenadoresDeEscuela, solicitudesPendientes,
+} from '@/lib/api';
 import { useEscuela } from '@/lib/escuela';
 import { mensajeError } from '@/lib/errores';
+import type { Anomalia } from '@/lib/tipos';
 import { colors, fonts, type as t } from '@/theme';
 
 type Cifras = { entrenadores: number; alumnos: number; solicitudes: number };
@@ -16,20 +19,32 @@ export default function Panel() {
   const router = useRouter();
   const { actual, esDirector, recargar } = useEscuela();
   const [cifras, setCifras] = useState<Cifras | null>(null);
+  const [rarezas, setRarezas] = useState<Anomalia[]>([]);
+  const [provincia, setProvincia] = useState('');
+  const [comunidad, setComunidad] = useState('');
+  const [guardandoZona, setGuardandoZona] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
   const escuelaId = actual?.id;
 
+  // La zona que ya tiene la escuela
+  useEffect(() => {
+    setProvincia(actual?.provincia ?? '');
+    setComunidad(actual?.comunidad ?? '');
+  }, [actual?.id, actual?.provincia, actual?.comunidad]);
+
   const cargar = useCallback(async () => {
     if (!escuelaId) return;
     try {
-      const [e, a, s] = await Promise.all([
+      const [e, a, s, r] = await Promise.all([
         entrenadoresDeEscuela(escuelaId),
         alumnosDeEscuela(escuelaId),
         esDirector ? solicitudesPendientes(escuelaId) : Promise.resolve([]),
+        esDirector ? anomalias(escuelaId) : Promise.resolve([] as Anomalia[]),
       ]);
       setCifras({ entrenadores: e.length, alumnos: a.length, solicitudes: s.length });
+      setRarezas(r);
       setError(null);
     } catch (err) {
       setError(mensajeError(err));
@@ -61,6 +76,21 @@ export default function Panel() {
       setError(mensajeError(e));
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const guardarZona = async () => {
+    if (!escuelaId) return;
+    setGuardandoZona(true);
+    setError(null);
+    try {
+      await actualizarZona(escuelaId, provincia, comunidad);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      await recargar();
+    } catch (e) {
+      setError(mensajeError(e));
+    } finally {
+      setGuardandoZona(false);
     }
   };
 
@@ -129,6 +159,42 @@ export default function Panel() {
         {!esDirector && <Text style={styles.mut}>Solo el director puede cambiar este ajuste.</Text>}
       </Card>
 
+      {esDirector && (
+        <Card>
+          <Text style={t.h3}>Dónde está tu escuela</Text>
+          <Text style={styles.mut}>
+            Con la provincia y la comunidad tu escuela entra en los rankings de la zona. Escríbelas igual que las demás escuelas.
+          </Text>
+          <Field label="Provincia" placeholder="Ej. Huelva" value={provincia} onChangeText={setProvincia} autoCapitalize="words" maxLength={60} />
+          <Field label="Comunidad" placeholder="Ej. Andalucía" value={comunidad} onChangeText={setComunidad} autoCapitalize="words" maxLength={60} />
+          <Button
+            label="Guardar zona"
+            variant="dark"
+            small
+            cargando={guardandoZona}
+            disabled={provincia.trim() === (actual.provincia ?? '') && comunidad.trim() === (actual.comunidad ?? '')}
+            onPress={guardarZona}
+          />
+        </Card>
+      )}
+
+      {esDirector && rarezas.length > 0 && (
+        <Card>
+          <Text style={t.h3}>Patrones raros</Text>
+          <Text style={styles.mut}>
+            Solo los ves tú. Pueden tener una explicación normal: sirven para echar un vistazo.
+          </Text>
+          {rarezas.map((r, i) => (
+            <View key={i} style={styles.rareza}>
+              <Tag texto={r.tipo === 'siempre_completo' ? 'Asistencia perfecta' : 'Listas sin confirmar'} tipo="naranja" />
+              <Text style={styles.nombre}>{r.grupo ?? r.entrenador}</Text>
+              <Text style={styles.mut}>{r.grupo && r.entrenador ? `${r.entrenador} · ` : ''}{r.detalle}</Text>
+            </View>
+          ))}
+        </Card>
+      )}
+
+      <Button label="Cómo se puntúa" variant="ghost" small onPress={() => router.push('/escuela/como-se-puntua')} />
       <Button label="Mis escuelas" variant="ghost" onPress={() => router.push('/mis-escuelas')} />
     </Screen>
   );
@@ -143,4 +209,5 @@ const styles = StyleSheet.create({
   interruptor: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56 },
   nombre: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
   mut: { fontFamily: fonts.body, fontSize: 14, color: colors.ink2 },
+  rareza: { gap: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.line },
 });

@@ -33,6 +33,8 @@ export default function AlumnoLayout() {
       <Tabs.Screen name="ejercicios" options={{ title: 'Ejercicios', tabBarIcon: icono('list') }} />
       <Tabs.Screen name="avatares" options={{ href: null }} />
       <Tabs.Screen name="ejercicio" options={{ href: null }} />
+      <Tabs.Screen name="perfil-entrenador" options={{ href: null }} />
+      <Tabs.Screen name="como-se-puntua" options={{ href: null }} />
     </Tabs>
   );
 }

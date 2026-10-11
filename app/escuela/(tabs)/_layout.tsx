@@ -16,7 +16,8 @@ export default function EscuelaTabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.blue,
         tabBarInactiveTintColor: colors.ink2,
-        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
+        // Hasta seis pestañas (director): letra algo menor para que quepan los nombres
+        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 11 },
         tabBarStyle: { backgroundColor: colors.white, borderTopColor: colors.line, minHeight: 64 },
         sceneStyle: { backgroundColor: colors.bg },
       }}
@@ -25,6 +26,7 @@ export default function EscuelaTabs() {
       <Tabs.Screen name="horario" options={{ title: 'Horario', tabBarIcon: icono('calendar') }} />
       <Tabs.Screen name="biblioteca" options={{ title: 'Biblioteca', tabBarIcon: icono('list') }} />
       <Tabs.Screen name="personas" options={{ title: 'Personas', tabBarIcon: icono('coach'), href: esDirector ? undefined : null }} />
+      <Tabs.Screen name="ranking" options={{ title: 'Ranking', tabBarIcon: icono('trophy') }} />
       <Tabs.Screen name="panel" options={{ title: 'Escuela', tabBarIcon: icono('school') }} />
     </Tabs>
   );

@@ -165,7 +165,7 @@ export type ClaseConEjercicios = {
   ejercicios: EjercicioClase[];
 };
 
-export type EstadoEscuelaPerfil = { escuela: string; estado: EstadoMembresia };
+export type EstadoEscuelaPerfil = { id: string; escuela: string; estado: EstadoMembresia };
 
 // ---------- Escuela (director y entrenador) ----------
 export type RolStaff = 'director' | 'entrenador';
@@ -176,6 +176,8 @@ export type EscuelaStaff = {
   ciudad: string;
   codigo: string;
   participa_ranking: boolean;
+  provincia: string;
+  comunidad: string;
   rol: RolStaff; // director si lo es en esa escuela, aunque también sea entrenador
 };
 
@@ -214,3 +216,38 @@ export type FilaLista = {
   inscrito: boolean;
   estado: EstadoAsistencia;
 };
+
+// ---------- Rankings ----------
+export type AmbitoRanking = 'escuela' | 'provincia' | 'comunidad' | 'pais';
+
+export type EstadoRanking = {
+  participa: boolean;
+  provincia: string;
+  comunidad: string;
+  pais: string;
+  escuelas_provincia: number;
+  escuelas_comunidad: number;
+  escuelas_pais: number;
+  minimo_escuelas: number;
+  minimo_participantes: number;
+  temporada_desde: string;
+};
+
+export type FilaAlumnoRanking = { posicion: number; nombre: string; avatar: string; escuela: string | null; puntos: number; es_mio: boolean };
+export type FilaEntrenadorRanking = { posicion: number; entrenador_id: string; nombre: string; escuela: string | null; puntos: number; es_mio: boolean };
+export type FilaEscuelaRanking = { posicion: number; nombre: string; ciudad: string; puntos: number; es_mia: boolean };
+
+export type PerfilEntrenador = {
+  nombre: string;
+  escuelas: string[];
+  puntos: number;
+  uso: number;
+  constancia: number;
+  alumnos: number;
+  usos: number;
+  clases_esperadas: number;
+  clases_con_lista: number;
+  es_mio: boolean;
+};
+
+export type Anomalia = { tipo: 'siempre_completo' | 'sin_confirmar'; grupo: string | null; entrenador: string | null; detalle: string };

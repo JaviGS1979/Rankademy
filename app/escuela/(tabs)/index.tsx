@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Aviso, Button, Card, Cargando, Screen, Tag } from '@/components';
 import { SelectorEscuela } from '@/features/escuela/SelectorEscuela';
-import { gruposDeEscuela, miNombre, sesionesDelDia, solicitudesPendientes } from '@/lib/api';
+import { gruposDeEscuela, miNombre, rankingEntrenadores, sesionesDelDia, solicitudesPendientes } from '@/lib/api';
 import { useEscuela } from '@/lib/escuela';
 import { mensajeError } from '@/lib/errores';
 import { diaSemana, etiquetaDia, hoyISO, horaCorta, nombreDia, proximaClase } from '@/lib/fechas';
@@ -16,6 +16,7 @@ type Datos = {
   grupos: GrupoEscuela[];
   sesiones: SesionDia[];
   pendientes: number;
+  posicion: number | null;
 };
 
 // Hoy: las clases del día. El entrenador ve las suyas; el director, las de toda la escuela.
@@ -35,16 +36,20 @@ export default function Hoy() {
       const [nombre, grupos] = await Promise.all([miNombre(), gruposDeEscuela(escuelaId)]);
       const hoy = hoyISO();
       const deHoy = grupos.filter((g) => g.dia === diaSemana());
-      const [sesiones, pendientes] = await Promise.all([
+      const [sesiones, pendientes, posicion] = await Promise.all([
         sesionesDelDia(deHoy.map((g) => g.id), hoy),
         esDirector ? solicitudesPendientes(escuelaId).then((l) => l.length) : Promise.resolve(0),
+        // Mi puesto entre los entrenadores de mi escuela (si no sale, no pasa nada)
+        actual?.participa_ranking
+          ? rankingEntrenadores(escuelaId, 'escuela').then((l) => l.find((f) => f.es_mio)?.posicion ?? null).catch(() => null)
+          : Promise.resolve(null),
       ]);
-      setDatos({ nombre, grupos, sesiones, pendientes });
+      setDatos({ nombre, grupos, sesiones, pendientes, posicion });
       setError(null);
     } catch (e) {
       setError(mensajeError(e));
     }
-  }, [escuelaId, esDirector]);
+  }, [escuelaId, esDirector, actual?.participa_ranking]);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,6 +90,21 @@ export default function Hoy() {
             {datos.pendientes === 1 ? '1 solicitud' : `${datos.pendientes} solicitudes`} esperando tu aprobación
           </Text>
           <Text style={styles.pendientesLink}>Ver</Text>
+        </Pressable>
+      )}
+
+      {datos?.posicion != null && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Mi posición: puesto ${datos.posicion} entre los entrenadores de tu escuela. Abrir el ranking`}
+          onPress={() => router.push('/escuela/ranking')}
+          style={styles.posicion}
+        >
+          <Text style={styles.posicionNum}>#{datos.posicion}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.posicionTitulo}>Mi posición</Text>
+            <Text style={styles.mut}>Entrenadores de tu escuela</Text>
+          </View>
         </Pressable>
       )}
 
@@ -151,6 +171,9 @@ const styles = StyleSheet.create({
   hora: { fontFamily: fonts.display, fontSize: 34, color: colors.blue },
   nombre: { fontFamily: fonts.display, fontSize: 22, color: colors.ink, textTransform: 'uppercase' },
   mut: { fontFamily: fonts.body, fontSize: 14, color: colors.ink2 },
+  posicion: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, backgroundColor: colors.lime, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 8 },
+  posicionNum: { fontFamily: fonts.display, fontSize: 38, color: colors.ink },
+  posicionTitulo: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
   pendientes: {
     flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, backgroundColor: colors.orangeLight,
     borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10,
