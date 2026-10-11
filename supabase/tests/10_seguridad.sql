@@ -1090,6 +1090,39 @@ select t.ok('anomalías: solo el director (ni entrenadores ni familias)',
 select t.ok('anónimo: no ejecuta ninguna función de ranking', not has_function_privilege('anon', 'public.ranking_alumnos(uuid,text,integer,integer)', 'execute')
   and not has_function_privilege('anon', 'public.anomalias(uuid)', 'execute'));
 
+-- ---------------- Panel del fundador (0009) ----------------
+insert into public.escuelas (id, nombre, ciudad, provincia, comunidad, codigo, creada_por, participa_ranking)
+values ('e1000000-0000-0000-0000-000000000006', 'Sin Zona', 'Lepe', '', '', 'RKA-AA7', t.u('rdir'), true);
+select t.ok('fundador: el resumen tiene todos los bloques y cuadra con las tablas',
+  (select d ? 'crecimiento' and d ? 'actividad' and d ? 'retencion' and d ? 'biblioteca' and d ? 'rankings'
+          and (d -> 'crecimiento' ->> 'escuelas')::int = (select count(*) from public.escuelas)
+          and (d -> 'crecimiento' ->> 'alumnos')::int = (select count(distinct perfil_id) from public.membresias where rol = 'alumno' and estado = 'activa')
+          and jsonb_array_length(d -> 'crecimiento' -> 'por_semana') = 12
+          and jsonb_array_length(d -> 'actividad' -> 'por_semana') = 12
+          and (d -> 'rankings' ->> 'escuelas_sin_provincia')::int >= 1
+   from (select t.val('founder', 'select public.panel_fundador(30)::text')::jsonb d) x));
+select t.ok('fundador: el resumen no incluye nombres de alumnos ni correos',
+  t.val('founder', 'select public.panel_fundador(30)::text') not ilike '%Iker%'
+  and t.val('founder', 'select public.panel_fundador(30)::text') not ilike '%@%');
+select t.ok('fundador: una fila por escuela, con sus contadores',
+  t.cnt('founder', 'select 1 from public.escuelas_fundador()') = (select count(*) from public.escuelas)
+  and t.val('founder', $q$select entrenadores || '|' || alumnos || '|' || alumnos_con_familia || '|' || participa from public.escuelas_fundador() where nombre = 'Marismas'$q$) = '1|3|3|true');
+select t.ok('fundador: alertas de escuela sin actividad, sin provincia y patrones raros',
+  t.cnt('founder', $q$select 1 from public.alertas_fundador() where tipo = 'sin_actividad' and escuela = 'Fuera'$q$) = 1
+  and t.cnt('founder', $q$select 1 from public.alertas_fundador() where tipo = 'sin_provincia' and escuela = 'Sin Zona'$q$) = 1
+  and t.cnt('founder', $q$select 1 from public.alertas_fundador() where tipo = 'patron_raro' and escuela = 'Marismas'$q$) >= 1
+  and t.cnt('founder', $q$select 1 from public.alertas_fundador() where tipo = 'sin_actividad' and escuela = 'Marismas'$q$) = 0);
+select t.ok('nadie más usa el panel del fundador (director, entrenador, familia)',
+  not t.run('rdir', 'select public.panel_fundador()') and not t.run('rc1', 'select public.panel_fundador()')
+  and not t.run('rfam', 'select public.panel_fundador()') and not t.run('dir2', 'select * from public.escuelas_fundador()')
+  and not t.run('rdir', 'select * from public.alertas_fundador()'));
+select t.ok('anónimo: no ejecuta las funciones del fundador',
+  not has_function_privilege('anon', 'public.panel_fundador(integer)', 'execute')
+  and not has_function_privilege('anon', 'public.escuelas_fundador()', 'execute')
+  and not has_function_privilege('anon', 'public.alertas_fundador()', 'execute'));
+select t.ok('nadie se hace fundador escribiendo en la tabla', not t.run('rdir', format(
+  'insert into public.fundadores (persona_id) values (%L)', t.u('rdir'))));
+
 select case when bool_and(ok) then 'TODAS LAS PRUEBAS PASAN (' || count(*) || ')'
        else 'HAY FALLOS' end as resultado from t.res;
 select n, descr from t.res where not ok order by n;

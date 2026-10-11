@@ -112,3 +112,11 @@ No hay tablas nuevas: los rankings se calculan al consultarlos, así que se actu
 - **Escuelas** (`ranking_escuelas`): media de 0 a 1000 de sus entrenadores y sus alumnos. Para cada alumno, su XP de la temporada en la escuela frente a 300 por semana. Hace falta un mínimo de 5 participantes (`minimo_participantes_escuela`) y no se muestra cuántos son.
 - **Zonas**: provincia y comunidad se comparan sin distinguir mayúsculas ni espacios; hacen falta al menos 3 escuelas participando (`minimo_escuelas_zona`). Los rankings se piden siempre desde una escuela de la que se es miembro aprobado (`estado_ranking` dice si participa, su zona y cuántas escuelas hay). **La provincia y la comunidad de cada escuela las pone el director**: sin ellas, solo hay ranking de la escuela y del país.
 - **Patrones raros** (`anomalias`, solo el director): grupos con todos los alumnos presentes en sus 6 últimas clases, y entrenadores con al menos 10 asistencias marcadas de las que las familias confirman menos del 30 %.
+
+## Panel del fundador (0009)
+
+Solo lo usa quien esté en `public.fundadores` (se añade a mano, ver "Fundador" arriba). Nadie puede añadirse desde la app. Devuelve cifras agregadas y, por escuela, su nombre, ciudad y contadores. Nunca datos de un menor ni correos.
+
+- `panel_fundador(p_dias)`: crecimiento (altas por semana durante 12 semanas), actividad (clases con lista, asistencias marcadas y confirmadas), retención (escuelas y entrenadores activos en 14 días, alumnos veteranos activos en 30), biblioteca (públicos, variantes, privados, usos, los 5 más usados) y rankings (escuelas participantes, provincias y si ya tienen ranking).
+- `escuelas_fundador()`: el piloto, con una fila por escuela: entrenadores, alumnos, alumnos con familia, grupos, clases y asistencias de las últimas 4 semanas, ejercicios, última clase y solicitudes pendientes.
+- `alertas_fundador()`: escuelas con grupos y sin pasar lista en 14 días, escuelas sin grupos tras una semana, solicitudes sin atender más de 7 días, alumnos sin familia vinculada más de 14 días, escuelas en el ranking sin provincia, patrones raros e intentos fallidos con códigos (30 o más en 24 horas).
