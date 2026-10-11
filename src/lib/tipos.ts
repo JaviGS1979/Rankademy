@@ -74,7 +74,7 @@ export type ResultadoConfirmacion = {
   avatares_nuevos: string[];
 };
 
-export type Avatar = { id: string; orden: number; precio_xp: number };
+export type Avatar = { id: string; orden: number; nombre: string; precio_xp: number };
 
 export type EjercicioClase = {
   id: string;

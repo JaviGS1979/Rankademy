@@ -1,7 +1,7 @@
 // Genera src/lib/avatares.ts a partir de las imágenes de assets/avatares/ y dice qué falta.
 //   npm run avatares
 //
-// Convención de nombres (NN = número del avatar, con dos cifras, del 01 al 18):
+// Convención de nombres (NN = número del avatar, con dos cifras, del 01 al 20):
 //   avNN.jpg     miniatura, 220×220 px (la usan el selector, la rejilla de avatares, etc.)
 //   hero-NN.jpg  imagen grande en cuerpo completo, 780×1036 px (formato 3:4), para el inicio
 //
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const carpeta = join(raiz, 'assets', 'avatares');
-const TOTAL = 18;
+const TOTAL = 20;
 const MINIATURA = [220, 220];
 const HEROE = [780, 1036];
 

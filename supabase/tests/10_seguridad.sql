@@ -376,8 +376,10 @@ select t.ok('app: otra familia no ve el progreso ajeno', not t.run('fam2',
 select t.ok('el perfil tiene avatar inicial y solo los 2 gratuitos',
   (select avatar from public.perfiles_alumno where id='10000000-0000-0000-0000-000000000001') = 'av01'
   and (select string_agg(avatar, ',' order by avatar) from public.avatares_desbloqueados where perfil_id='10000000-0000-0000-0000-000000000001') = 'av01,av08');
-select t.ok('app: el catálogo tiene 18 avatares con precio y solo 2 gratis',
-  t.cnt('fam1', 'select 1 from public.avatares') = 18 and t.cnt('fam1', 'select 1 from public.avatares where precio_xp = 0') = 2);
+select t.ok('app: el catálogo tiene 20 avatares con nombre y precio, y solo 2 gratis',
+  t.cnt('fam1', 'select 1 from public.avatares') = 20 and t.cnt('fam1', 'select 1 from public.avatares where precio_xp = 0') = 2
+  and t.cnt('fam1', 'select 1 from public.avatares where nombre is null or nombre = $$$$') = 0
+  and (select count(distinct nombre) from public.avatares) = 20 and (select count(distinct orden) from public.avatares) = 20);
 select t.ok('anónimo: sin acceso al catálogo', t.anon_denegado('select 1 from public.avatares'));
 select t.ok('el nivel sube cada 1000 XP', privado.nivel_de_xp(0) = 1 and privado.nivel_de_xp(999) = 1
   and privado.nivel_de_xp(1000) = 2 and privado.nivel_de_xp(4000) = 5);

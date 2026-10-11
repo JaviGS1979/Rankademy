@@ -1120,16 +1120,20 @@ alter table public.inscripciones
 create table public.avatares (
   id text primary key,
   orden smallint not null unique,
+  nombre text not null check (length(btrim(nombre)) > 0),
   precio_xp integer not null check (precio_xp >= 0)
 );
 
 -- Precios iniciales (editables):  update public.avatares set precio_xp = 500 where id = 'av05';
-insert into public.avatares (id, orden, precio_xp) values
-  ('av01', 1, 0),   ('av08', 2, 0),
-  ('av02', 3, 300), ('av03', 4, 400), ('av04', 5, 500), ('av05', 6, 500), ('av06', 7, 600),
-  ('av07', 8, 900), ('av09', 9, 1000), ('av10', 10, 1200), ('av11', 11, 1400),
-  ('av12', 12, 1500), ('av13', 13, 1600), ('av14', 14, 1800),
-  ('av15', 15, 3000), ('av16', 16, 3500), ('av17', 17, 4000), ('av18', 18, 4500);
+-- Orden: primero los gratuitos y después de menor a mayor precio.
+insert into public.avatares (id, orden, nombre, precio_xp) values
+  ('av01', 1,  'Blazira', 0),    ('av08', 2,  'Drixa', 0),
+  ('av02', 3,  'Bruno', 300),    ('av03', 4,  'Klax', 400),     ('av04', 5,  'Kron', 500),
+  ('av05', 6,  'Terrio', 500),   ('av06', 7,  'Nira', 600),     ('av07', 8,  'Ivora', 900),
+  ('av09', 9,  'Sael', 1000),    ('av10', 10, 'Zora', 1200),    ('av11', 11, 'Vandara', 1400),
+  ('av12', 12, 'Naro', 1500),    ('av13', 13, 'Vexon', 1600),   ('av14', 14, 'Havy', 1800),
+  ('av19', 15, 'Lyn', 2000),     ('av15', 16, 'Yvan', 3000),    ('av16', 17, 'Martiny', 3500),
+  ('av17', 18, 'Mureno', 4000),  ('av18', 19, 'Yaizy', 4500),   ('av20', 20, 'Zephyr', 5000);
 
 alter table public.avatares enable row level security;
 revoke all on public.avatares from anon, authenticated;

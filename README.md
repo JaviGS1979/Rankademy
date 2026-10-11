@@ -7,7 +7,7 @@ Expo (React Native) + TypeScript + Expo Router; backend en Supabase.
 - `app/` — rutas (Expo Router).
 - `src/theme` — tokens de color y tipografía (de `design/assets/rankademy.css`).
 - `src/components` — componentes base.
-- `assets/avatares/` — avatares: `avNN.jpg` (miniatura 220×220) y `hero-NN.jpg` (cuerpo completo 780×1036). Tras añadir imágenes, `npm run avatares`.
+- `assets/avatares/` — avatares: `avNN.jpg` (miniatura 220×220) y `hero-NN.jpg` (cuerpo completo 780×1036); los nombres están en la tabla `avatares` de la base de datos. Tras añadir imágenes, `npm run avatares`.
 
 ## Desarrollo
 

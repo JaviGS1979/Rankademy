@@ -104,8 +104,8 @@ export default function Avatares() {
           const enUso = (activo?.avatar ?? 'av01') === a.id;
           const alcanza = !!prog && prog.saldo >= a.precio_xp;
           const etiqueta = mio
-            ? enUso ? `Avatar ${a.orden}, en uso` : `Elegir avatar ${a.orden}`
-            : mini ? `Avatar ${a.orden} bloqueado` : `Avatar ${a.orden}, ${a.precio_xp} XP${alcanza ? ', puedes conseguirlo' : ''}`;
+            ? enUso ? `${a.nombre}, en uso` : `Elegir a ${a.nombre}`
+            : mini ? `${a.nombre}, bloqueado` : `${a.nombre}, ${a.precio_xp} XP${alcanza ? ', puedes conseguirlo' : ''}`;
           return (
             <Pressable
               key={a.id}
@@ -122,6 +122,7 @@ export default function Avatares() {
                   <Icon name="lock" size={20} color={colors.ink} />
                 </View>
               )}
+              {!mini && <Text style={styles.nombre} numberOfLines={1}>{a.nombre}</Text>}
               {mini ? (
                 enUso && (
                   <View style={styles.marca}>
@@ -166,6 +167,7 @@ const styles = StyleSheet.create({
   img: { width: '100%', aspectRatio: 1, borderRadius: 12 },
   candado: { position: 'absolute', top: 12, right: 12, backgroundColor: colors.white, borderRadius: 12, padding: 4 },
   marca: { position: 'absolute', top: 12, right: 12, backgroundColor: colors.lime, borderRadius: 12, padding: 4 },
+  nombre: { fontFamily: fonts.display, fontSize: 18, lineHeight: 18, color: colors.ink, textTransform: 'uppercase', textAlign: 'center' },
   pie: { minHeight: 28, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   pieTexto: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
   proximo: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.ink },

@@ -61,7 +61,7 @@ Las constantes están al principio de las funciones de `migrations/0005_alumno.s
 | Bonus de racha | +10 % por cada 7 días de racha, hasta +50 % |
 | Nivel | 1 + XP ganado / 1000 |
 | Racha | días naturales entre la primera y la última clase de una serie sin faltas. No la rompen clases canceladas, faltas justificadas, clases de hoy o por confirmar (14 días de plazo) ni clases anteriores a apuntarse al grupo |
-| Avatares | 2 gratuitos (`av01`, `av08`); el resto cuesta XP. Se pagan con el saldo (XP ganado − gastado); el nivel y el ranking no bajan |
+| Avatares | 20, cada uno con nombre. 2 gratuitos (Blazira y Drixa); el resto cuesta XP (de 300 a 5.000). Se pagan con el saldo (XP ganado − gastado); el nivel y el ranking no bajan |
 | Perfiles Mini (hasta 7 años) | no compran: desbloquean solos los avatares que alcanza su XP ganado |
 
 ### Cambiar un precio
@@ -72,7 +72,7 @@ En **SQL Editor**:
 update public.avatares set precio_xp = 800 where id = 'av05';
 ```
 
-Para ver todos: `select id, precio_xp from public.avatares order by orden;`.
+Para ver todos: `select id, nombre, precio_xp from public.avatares order by orden;`.
 
 ### Cambiar el XP por clase o el coste de un nivel
 

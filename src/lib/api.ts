@@ -177,7 +177,7 @@ export async function confirmarAsistencia(sesionId: string, perfilId: string): P
 }
 
 export async function catalogoAvatares(): Promise<Avatar[]> {
-  return ok(await supabase.from('avatares').select('id, orden, precio_xp').order('orden')) as Avatar[];
+  return ok(await supabase.from('avatares').select('id, orden, nombre, precio_xp').order('orden')) as Avatar[];
 }
 
 export async function avataresDesbloqueados(perfilId: string): Promise<string[]> {
