@@ -113,3 +113,14 @@ export function horaValida(texto: string): string | null {
   if (h > 23 || min > 59) return null;
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// '2026-10-05' → "5 oct"
+export function fechaCorta(fecha: string): string {
+  const d = deISO(fecha);
+  return `${d.getDate()} ${MESES[d.getMonth()]}`;
+}
+
+// Porcentaje entero (0 si no hay base)
+export const porcentaje = (parte: number, total: number) => (total > 0 ? Math.round((100 * parte) / total) : 0);

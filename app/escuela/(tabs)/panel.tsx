@@ -9,6 +9,7 @@ import {
 } from '@/lib/api';
 import { useEscuela } from '@/lib/escuela';
 import { mensajeError } from '@/lib/errores';
+import { useEsFundador } from '@/lib/useFundador';
 import type { Anomalia } from '@/lib/tipos';
 import { colors, fonts, type as t } from '@/theme';
 
@@ -17,6 +18,7 @@ type Cifras = { entrenadores: number; alumnos: number; solicitudes: number };
 // Panel de la escuela: código, cifras y ajustes. El entrenador solo ve lo básico.
 export default function Panel() {
   const router = useRouter();
+  const fundador = useEsFundador();
   const { actual, esDirector, recargar } = useEscuela();
   const [cifras, setCifras] = useState<Cifras | null>(null);
   const [rarezas, setRarezas] = useState<Anomalia[]>([]);
@@ -194,6 +196,7 @@ export default function Panel() {
         </Card>
       )}
 
+      {fundador && <Button label="Panel del fundador" variant="blue" onPress={() => router.push('/fundador')} />}
       <Button label="Cómo se puntúa" variant="ghost" small onPress={() => router.push('/escuela/como-se-puntua')} />
       <Button label="Mis escuelas" variant="ghost" onPress={() => router.push('/mis-escuelas')} />
     </Screen>

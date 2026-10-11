@@ -3,7 +3,7 @@ import { hoyISO } from './fechas';
 import type {
   AlumnoEscuela, AmbitoRanking, Anomalia, Avatar, ClaseConEjercicios, DetalleEjercicio, EjercicioClase, Elemento, EntrenadorEscuela, Escuela,
   EscuelaStaff, EstadoEscuelaPerfil, EstadoRanking, FilaAlumnoRanking, FilaEntrenadorRanking, FilaEscuelaRanking, FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
-  Parecido, PerfilEntrenador, ResumenEjercicio, Rol, RolStaff, SesionDia, Solicitud,
+  AlertaFundador, EscuelaPiloto, PanelFundador, Parecido, PerfilEntrenador, ResumenEjercicio, Rol, RolStaff, SesionDia, Solicitud,
 } from './tipos';
 
 function ok<T>(r: { data: T; error: unknown }): T {
@@ -623,4 +623,24 @@ export async function actualizarZona(escuelaId: string, provincia: string, comun
     .select('id');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error('No se pudo guardar la zona');
+}
+
+// ---------- Panel del fundador (solo el fundador; para los demás da vacío o error) ----------
+export async function esFundador(): Promise<boolean> {
+  const uid = await miId();
+  if (!uid) return false;
+  const { data, error } = await supabase.from('fundadores').select('persona_id').eq('persona_id', uid).maybeSingle();
+  return !error && !!data;
+}
+
+export async function panelFundador(dias: number): Promise<PanelFundador> {
+  return ok(await supabase.rpc('panel_fundador', { p_dias: dias })) as PanelFundador;
+}
+
+export async function escuelasFundador(): Promise<EscuelaPiloto[]> {
+  return ok(await supabase.rpc('escuelas_fundador')) as EscuelaPiloto[];
+}
+
+export async function alertasFundador(): Promise<AlertaFundador[]> {
+  return ok(await supabase.rpc('alertas_fundador')) as AlertaFundador[];
 }

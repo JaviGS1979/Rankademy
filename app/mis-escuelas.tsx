@@ -7,6 +7,7 @@ import { SolicitudFila } from '@/features/escuela/SolicitudFila';
 import { cerrarSesion, misMembresias, resolverSolicitud, solicitudesPendientes } from '@/lib/api';
 import { confirmar } from '@/lib/avisar';
 import { mensajeError } from '@/lib/errores';
+import { useEsFundador } from '@/lib/useFundador';
 import type { MiMembresia, Rol, Solicitud } from '@/lib/tipos';
 import { colors, fonts, type as t } from '@/theme';
 
@@ -15,6 +16,7 @@ const coloresAv = [colors.blue, colors.orange, colors.ink];
 
 export default function MisEscuelas() {
   const router = useRouter();
+  const fundador = useEsFundador();
   const { nueva } = useLocalSearchParams<{ nueva?: string }>();
   const [membresias, setMembresias] = useState<MiMembresia[] | null>(null);
   const [solicitudes, setSolicitudes] = useState<Record<string, Solicitud[]>>({});
@@ -115,6 +117,7 @@ export default function MisEscuelas() {
       <Button label="Añadir otra escuela" variant="dark" onPress={() => router.push('/anadir-escuela')} />
       <Button label="Crear una escuela" variant="ghost" onPress={() => router.push('/crear-escuela')} />
       <Button label="Tengo un código de alumno" variant="ghost" onPress={() => router.push('/vincular-alumno')} />
+      {fundador && <Button label="Panel del fundador" variant="blue" onPress={() => router.push('/fundador')} />}
 
       <Card>
         <Text style={styles.label}>Cómo cuentan tus puntos</Text>

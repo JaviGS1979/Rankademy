@@ -251,3 +251,44 @@ export type PerfilEntrenador = {
 };
 
 export type Anomalia = { tipo: 'siempre_completo' | 'sin_confirmar'; grupo: string | null; entrenador: string | null; detalle: string };
+
+// ---------- Panel del fundador ----------
+export type SemanaCifra = { semana: string; [clave: string]: number | string };
+
+export type PanelFundador = {
+  periodo_dias: number;
+  generado: string;
+  crecimiento: {
+    escuelas: number; escuelas_nuevas: number; personas: number; personas_nuevas: number; directores: number;
+    entrenadores: number; familias: number; alumnos: number; alumnos_mini: number; alumnos_nuevos: number;
+    solicitudes_pendientes: number;
+    por_semana: { semana: string; personas: number; escuelas: number; alumnos: number }[];
+  };
+  actividad: {
+    clases_con_lista: number; clases_canceladas: number; asistencias_marcadas: number; asistencias_confirmadas: number;
+    entrenadores_que_pasan_lista: number; familias_que_confirman: number;
+    por_semana: { semana: string; clases: number; confirmadas: number }[];
+  };
+  retencion: {
+    escuelas_activas_14d: number; entrenadores_activos_14d: number; alumnos_veteranos: number;
+    alumnos_veteranos_activos_30d: number; bajas: number;
+  };
+  biblioteca: {
+    publicos: number; variantes: number; privados: number; retirados: number; nuevos: number; autores: number;
+    usos_periodo: number; clases_con_ejercicios: number; mas_usados: { titulo: string; usado_por: number }[];
+  };
+  rankings: {
+    escuelas_participan: number; escuelas_sin_provincia: number; alumnos_compiten: number; alumnos_no_quieren: number;
+    minimo_escuelas: number; provincias: { provincia: string; escuelas: number; con_ranking: boolean }[];
+    temporada_desde: string;
+  };
+};
+
+export type EscuelaPiloto = {
+  id: string; nombre: string; ciudad: string; provincia: string; creada: string; participa: boolean;
+  entrenadores: number; alumnos: number; alumnos_con_familia: number; grupos: number;
+  clases_4_semanas: number; asistencias_4_semanas: number; confirmadas_4_semanas: number;
+  ejercicios: number; ultima_clase: string | null; solicitudes_pendientes: number;
+};
+
+export type AlertaFundador = { nivel: 'alta' | 'media' | 'info'; tipo: string; escuela: string | null; detalle: string };

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  deISO, diaSemana, etiquetaDia, etiquetaFecha, etiquetaSesion, horaValida, hoyISO, ocurrenciasDelGrupo, proximaClase,
+  deISO, diaSemana, fechaCorta, etiquetaDia, etiquetaFecha, etiquetaSesion, horaValida, hoyISO, ocurrenciasDelGrupo, porcentaje, proximaClase,
   proximaOcurrencia,
 } from './fechas.ts';
 
@@ -86,4 +86,12 @@ test('hora válida', () => {
   assert.equal(horaValida('24:00'), null);
   assert.equal(horaValida('17:75'), null);
   assert.equal(horaValida('tarde'), null);
+});
+
+test('fecha corta y porcentaje', () => {
+  assert.equal(fechaCorta('2026-10-05'), '5 oct');
+  assert.equal(fechaCorta('2026-01-30'), '30 ene');
+  assert.equal(porcentaje(1, 3), 33);
+  assert.equal(porcentaje(2, 3), 67);
+  assert.equal(porcentaje(5, 0), 0);
 });
