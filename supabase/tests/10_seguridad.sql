@@ -338,48 +338,173 @@ select t.ok('coach2 no ve puntos de A', t.cnt('coach2', 'select 1 from public.pu
 select t.ok('nadie escribe puntos directamente', not t.run('fam1',
   $q$insert into public.puntos (perfil_id, escuela_id, sesion_id, valor) select perfil_id, (select id from cod where esc='A'), sesion_id, 9999 from public.asistencias$q$));
 
--- ---------------- Ejercicios y biblioteca ----------------
-select t.ok('coach1 sube un ejercicio público', t.run('coach1', format(
-  $q$insert into public.ejercicios (id, autor_id, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000001',%L,'Volea cruzada',2,4)$q$, t.u('coach1'))));
-select t.ok('coach1 sube uno solo para su escuela', t.run('coach1', format(
-  $q$insert into public.ejercicios (id, autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000002',%L,%L,'escuela','Secreto A',1,2)$q$, t.u('coach1'), (select id from cod where esc='A'))));
-select t.ok('no se sube a nombre de otro', not t.run('coach1', format(
-  $q$insert into public.ejercicios (autor_id, titulo, jugadores_min, jugadores_max) values (%L,'Falso',1,2)$q$, t.u('coach2'))));
-select t.ok('una familia no sube ejercicios', not t.run('fam1', format(
-  $q$insert into public.ejercicios (autor_id, titulo, jugadores_min, jugadores_max) values (%L,'Falso',1,2)$q$, t.u('fam1'))));
-select t.ok('no se publica "solo mi escuela" de una escuela ajena', not t.run('coach2', format(
-  $q$insert into public.ejercicios (autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values (%L,%L,'escuela','Intruso',1,2)$q$, t.u('coach2'), (select id from cod where esc='A'))));
-select t.ok('imágenes: solo el autor las añade', t.run('coach1',
-  $q$insert into public.ejercicio_imagenes (ejercicio_id, orden, dibujo) values ('40000000-0000-0000-0000-000000000001',0,'<svg/>')$q$)
-  and not t.run('coach2', $q$insert into public.ejercicio_imagenes (ejercicio_id, orden, dibujo) values ('40000000-0000-0000-0000-000000000001',1,'<svg/>')$q$));
+-- ---------------- Ejercicios y biblioteca (0007) ----------------
+-- Dibujos: D1 (cruzado), D1 en espejo izquierda-derecha, D2 (conos)
+create function t.d1() returns jsonb language sql immutable as $$
+  select '[{"t":"jugador","x":30,"y":100},{"t":"pelota","x":208,"y":42},{"t":"trayecto","de":[38,98],"a":[200,44],"tipo":"bola"}]'::jsonb $$;
+create function t.d1_espejo() returns jsonb language sql immutable as $$
+  select '[{"t":"jugador","x":210,"y":100},{"t":"pelota","x":32,"y":42},{"t":"trayecto","de":[202,98],"a":[40,44]}]'::jsonb $$;
+create function t.d2() returns jsonb language sql immutable as $$
+  select '[{"t":"cono","x":120,"y":20},{"t":"cono","x":120,"y":120},{"t":"jugador","x":120,"y":70}]'::jsonb $$;
+-- Datos de un ejercicio para publicar_ejercicio
+create function t.pub(titulo text, imgs jsonb, jmin int default 4, jmax int default 8, emin int default 8, emax int default 13,
+                      vis text default 'publica', escuela uuid default null, original uuid default null, pasos jsonb default '[]')
+returns text language sql immutable as $$
+  select jsonb_strip_nulls(jsonb_build_object('titulo', titulo, 'imagenes', imgs, 'jugadores_min', jmin, 'jugadores_max', jmax,
+    'edad_min', emin, 'edad_max', emax, 'visibilidad', vis, 'escuela_id', escuela, 'original_id', original,
+    'pasos', pasos, 'material', '["pelotas","conos"]'::jsonb, 'nivel', 'medio', 'objetivo', 'derecha', 'espacio', 'media'))::text $$;
+create table t.ej (nombre text primary key, id uuid);
+create function t.ej(n text) returns uuid language sql stable as $$ select id from t.ej where nombre = n $$;
+-- Publica como usuario y guarda el id con un nombre
+create function t.publica(usr text, nombre text, datos text) returns void language sql as $$
+  insert into t.ej values (nombre, t.val(usr, format('select public.publicar_ejercicio(%L::jsonb)::text', datos))::uuid) $$;
 
-select t.ok('biblioteca: coach2 ve el público pero NO el de escuela',
-  t.cnt('coach2', 'select 1 from public.biblioteca_ejercicios()') = 1
-  and t.cnt('coach2', 'select 1 from public.biblioteca_ejercicios() where titulo = ''Secreto A''') = 0);
-select t.ok('biblioteca: no expone al autor', (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-       where n.nspname='public' and p.proname='biblioteca_ejercicios'
-         and pg_get_function_result(p.oid) ilike '%autor%') = 0);
-select t.ok('biblioteca vacía para una familia', t.cnt('fam1', 'select 1 from public.biblioteca_ejercicios()') = 0);
-select t.ok('coach2 no lee ejercicios ajenos directamente', t.cnt('coach2', 'select 1 from public.ejercicios') = 0);
-select t.ok('coach2 ve las imágenes de un ejercicio público; fam2 no ve ninguna',
-  t.cnt('coach2', 'select 1 from public.ejercicio_imagenes') = 1
-  and t.cnt('fam2', 'select 1 from public.ejercicio_imagenes') = 0);
-select t.ok('dir1 ve el de su escuela', t.cnt('dir1', 'select 1 from public.ejercicios where titulo = ''Secreto A''') = 1);
-select t.ok('coach2 no edita ni borra el ejercicio de coach1',
-  t.rows('coach2', $q$update public.ejercicios set titulo='Hack' where id='40000000-0000-0000-0000-000000000001'$q$) = 0
-  and t.rows('coach2', $q$delete from public.ejercicios where id='40000000-0000-0000-0000-000000000001'$q$) = 0);
+select t.publica('coach1', 'Cruzado', t.pub('Cruzado y paralelo', jsonb_build_array(t.d1()), pasos => '["Cruzado, 5 pelotas","Cambio: paralelo","Punto con premio"]'));
+select t.ok('coach1 publica un ejercicio en la biblioteca', t.ej('Cruzado') is not null
+  and (select autor_id = t.u('coach1') and visibilidad = 'publica' and escuela_id is null and huella is not null
+              and cardinality(pasos) = 3 and nivel = 'medio' and material = '{conos,pelotas}'
+       from public.ejercicios where id = t.ej('Cruzado'))
+  and (select count(*) from public.ejercicio_imagenes where ejercicio_id = t.ej('Cruzado')) = 1);
+select t.publica('coach1', 'SecretoA', t.pub('Secreto A', jsonb_build_array(t.d2(), t.d1()), 1, 2, vis => 'escuela', escuela => (select id from cod where esc='A')));
+select t.ok('coach1 publica uno "solo mi escuela" con 2 imágenes', t.ej('SecretoA') is not null
+  and (select count(*) from public.ejercicio_imagenes where ejercicio_id = t.ej('SecretoA')) = 2);
+select t.ok('una familia no publica ejercicios', not t.run('fam1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Falso', jsonb_build_array(t.d2()), 1, 2))));
+select t.ok('un entrenador pendiente de aprobar no publica', not t.run('coach3', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Falso', jsonb_build_array(t.d2()), 1, 2))));
+select t.ok('no se publica "solo mi escuela" en una escuela ajena', not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)',
+  t.pub('Intruso', jsonb_build_array(t.d2()), 1, 2, vis => 'escuela', escuela => (select id from cod where esc='B')))));
+select t.ok('no se escribe en ejercicios ni imágenes directamente (ni el autor)',
+  not t.run('coach1', format($q$insert into public.ejercicios (autor_id, titulo, jugadores_min, jugadores_max) values (%L,'Directo',1,2)$q$, t.u('coach1')))
+  and not t.run('coach1', format($q$insert into public.ejercicio_imagenes (ejercicio_id, orden, elementos) values (%L, 3, %L)$q$, t.ej('Cruzado'), t.d2()))
+  and not t.run('coach1', format($q$update public.ejercicios set titulo = 'Cambio' where id = %L$q$, t.ej('Cruzado')))
+  and not t.run('coach1', format($q$delete from public.ejercicios where id = %L$q$, t.ej('Cruzado'))));
 
-select t.ok('coach1 usa su ejercicio en la sesión', t.run('coach1',
-  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001')$q$));
-select t.ok('coach2 no añade usos a sesiones de A', not t.run('coach2',
-  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001')$q$));
-select t.ok('coach2 sube uno privado en B', t.run('coach2', format(
-  $q$insert into public.ejercicios (id, autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max) values ('40000000-0000-0000-0000-000000000003',%L,%L,'escuela','Secreto B',1,2)$q$, t.u('coach2'), (select id from cod where esc='B'))));
-select t.ok('coach1 no usa en su sesión el privado de otra escuela', not t.run('coach1',
-  $q$insert into public.usos_ejercicio values ('30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000003')$q$));
-select t.ok('fam1 ve el ejercicio que usa la clase de su hijo', t.cnt('fam1', 'select 1 from public.ejercicios') = 1);
-select t.ok('fam2 no lo ve', t.cnt('fam2', 'select 1 from public.ejercicios') = 0);
-select t.ok('el uso se suma en la biblioteca', t.val('coach2', 'select usos from public.biblioteca_ejercicios() where titulo = ''Volea cruzada''') = '1');
+-- Validación del dibujo y de los datos
+select t.ok('dibujo: fuera de la pista, tipo desconocido, claves extra, sin elementos o sin imágenes se rechazan',
+  not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[[{"t":"jugador","x":999,"y":10}]]'::jsonb, 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[[{"t":"dragon","x":9,"y":10}]]'::jsonb, 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[[{"t":"jugador","x":9,"y":10,"svg":"<script>"}]]'::jsonb, 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[[{"t":"trayecto","de":[1,2],"a":["x",3]}]]'::jsonb, 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[[]]'::jsonb, 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', '[]'::jsonb, 1, 2))));
+select t.ok('más de 5 imágenes, 4 pasos, jugadores o edades imposibles se rechazan',
+  not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', jsonb_build_array(t.d2(), t.d2(), t.d2(), t.d2(), t.d2(), t.d2()), 1, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', jsonb_build_array(t.d2()), 1, 2, pasos => '["a","b","c","d"]')))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', jsonb_build_array(t.d2()), 6, 2)))
+  and not t.run('coach1', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Malo', jsonb_build_array(t.d2()), 1, 2, 2, 20))));
+select t.ok('ninguno de los rechazados quedó guardado', (select count(*) from public.ejercicios) = 2);
+
+-- Duplicados y variantes
+select t.ok('buscar_parecidos: el mismo dibujo en espejo, con los mismos jugadores y edad, es 100 % igual',
+  t.val('coach2', format('select parecido::text from public.buscar_parecidos(%L::jsonb, 4, 8, 8, 13) where id = %L',
+    jsonb_build_array(t.d1_espejo()), t.ej('Cruzado'))) = '100');
+select t.ok('buscar_parecidos: un dibujo distinto no aparece', t.cnt('coach2', format(
+  'select 1 from public.buscar_parecidos(%L::jsonb, 1, 2, 14, 17)', jsonb_build_array(t.d2()))) = 0);
+select t.ok('buscar_parecidos no compara con los ejercicios "solo mi escuela"', t.cnt('coach2', format(
+  'select 1 from public.buscar_parecidos(%L::jsonb, 1, 2, 8, 13) where id = %L', jsonb_build_array(t.d2(), t.d1()), t.ej('SecretoA'))) = 0);
+select t.ok('una familia no usa buscar_parecidos', not t.run('fam1', format(
+  'select * from public.buscar_parecidos(%L::jsonb, 4, 8, 8, 13)', jsonb_build_array(t.d1()))));
+select t.ok('no se publica una copia (aunque esté en espejo)', not t.run('coach2', format('select public.publicar_ejercicio(%L::jsonb)',
+  t.pub('Mi cruzado', jsonb_build_array(t.d1_espejo())))));
+select t.publica('coach2', 'Variante', t.pub('Mi cruzado', jsonb_build_array(t.d1_espejo()), original => t.ej('Cruzado')));
+select t.ok('...pero sí como variante del original', (select original_id from public.ejercicios where id = t.ej('Variante')) = t.ej('Cruzado'));
+select t.publica('coach2', 'Variante2', t.pub('Mi cruzado 2', jsonb_build_array(t.d1()), original => t.ej('Variante')));
+select t.ok('la variante de una variante cuelga del original', (select original_id from public.ejercicios where id = t.ej('Variante2')) = t.ej('Cruzado'));
+select t.ok('no hay variantes privadas ni de un ejercicio privado',
+  not t.run('coach2', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('Privada', jsonb_build_array(t.d1()), vis => 'escuela',
+    escuela => (select id from cod where esc='B'), original => t.ej('Cruzado'))))
+  and not t.run('coach2', format('select public.publicar_ejercicio(%L::jsonb)', t.pub('De privado', jsonb_build_array(t.d2()), original => t.ej('SecretoA')))));
+select t.publica('coach2', 'Conos', t.pub('Conos en línea', jsonb_build_array(t.d2()), 1, 2, 14, 17));
+select t.ok('un ejercicio distinto se publica sin problema', t.ej('Conos') is not null);
+select t.publica('coach2', 'SecretoB', t.pub('Secreto B', jsonb_build_array(t.d2()), 1, 2, vis => 'escuela', escuela => (select id from cod where esc='B')));
+select t.ok('un ejercicio público nunca guarda la escuela', t.viola_restriccion(format(
+  $q$update public.ejercicios set escuela_id = %L where id = %L$q$, (select id from cod where esc='A'), t.ej('Cruzado'))));
+
+-- Biblioteca anónima
+select t.ok('biblioteca de coach2: los públicos originales (sin variantes) y los de su escuela',
+  t.cnt('coach2', 'select 1 from public.biblioteca()') = 3
+  and t.cnt('coach2', format('select 1 from public.biblioteca() where id in (%L, %L, %L)', t.ej('Cruzado'), t.ej('Conos'), t.ej('SecretoB'))) = 3);
+select t.ok('biblioteca de coach1: no ve el privado de B', t.cnt('coach1', 'select 1 from public.biblioteca()') = 3
+  and t.cnt('coach1', format('select 1 from public.biblioteca() where id = %L', t.ej('SecretoB'))) = 0);
+select t.ok('biblioteca: el original muestra sus 2 variantes y si es mío',
+  t.val('coach2', format('select variantes::text from public.biblioteca() where id = %L', t.ej('Cruzado'))) = '2'
+  and t.val('coach2', format('select es_mio::text from public.biblioteca() where id = %L', t.ej('Cruzado'))) = 'false'
+  and t.val('coach1', format('select es_mio::text from public.biblioteca() where id = %L', t.ej('Cruzado'))) = 'true');
+select t.ok('biblioteca: no expone al autor ni la escuela', (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname in ('biblioteca', 'buscar_parecidos', 'ejercicios_de_clase')
+    and (pg_get_function_result(p.oid) ilike '%autor%' or pg_get_function_result(p.oid) ilike '%escuela%')) = 0);
+select t.ok('biblioteca vacía para una familia', t.cnt('fam1', 'select 1 from public.biblioteca()') = 0);
+select t.ok('filtros: edad, texto, jugadores, nivel y material',
+  t.cnt('coach2', 'select 1 from public.biblioteca(p_edad_min => 14, p_edad_max => 17)') = 1
+  and t.cnt('coach2', $q$select 1 from public.biblioteca(p_texto => 'CRUZ')$q$) = 1
+  and t.cnt('coach2', $q$select 1 from public.biblioteca(p_texto => '%')$q$) = 0
+  and t.cnt('coach2', 'select 1 from public.biblioteca(p_jug_min => 10)') = 0
+  and t.cnt('coach2', $q$select 1 from public.biblioteca(p_niveles => array['avanzado'])$q$) = 0
+  and t.cnt('coach2', $q$select 1 from public.biblioteca(p_materiales => array['conos'])$q$) = 3);
+select t.ok('"mis ejercicios": los míos, también variantes y privados', t.cnt('coach2', 'select 1 from public.biblioteca(p_mios => true)') = 4);
+select t.ok('coach2 no lee directamente el ejercicio público de coach1 (ni su autor)',
+  t.cnt('coach2', format('select 1 from public.ejercicios where id = %L', t.ej('Cruzado'))) = 0);
+
+-- Detalle
+select t.ok('detalle para coach2: datos, pasos, imágenes y variantes, sin autor',
+  (select (d ->> 'titulo') = 'Cruzado y paralelo' and jsonb_array_length(d -> 'pasos') = 3
+          and jsonb_array_length(d -> 'imagenes') = 1 and jsonb_array_length(d -> 'variantes') = 2
+          and (d ->> 'es_mio')::boolean = false and not (d ? 'autor_id') and not (d ? 'escuela_id')
+   from (select t.val('coach2', format('select public.detalle_ejercicio(%L)::text', t.ej('Cruzado')))::jsonb d) x));
+select t.ok('detalle de una variante: muestra su original y las demás variantes',
+  (select (d -> 'original' ->> 'id')::uuid = t.ej('Cruzado') and jsonb_array_length(d -> 'variantes') = 1
+   from (select t.val('coach1', format('select public.detalle_ejercicio(%L)::text', t.ej('Variante')))::jsonb d) x));
+select t.ok('detalle: nadie de fuera ve el privado; una familia no ve la biblioteca',
+  not t.run('coach2', format('select public.detalle_ejercicio(%L)', t.ej('SecretoA')))
+  and not t.run('fam2', format('select public.detalle_ejercicio(%L)', t.ej('Cruzado'))));
+
+-- Editar, retirar y borrar
+select t.ok('solo el autor edita los textos', not t.run('coach2', format(
+  $q$select public.editar_ejercicio(%L, '{"titulo":"Hack"}'::jsonb)$q$, t.ej('Cruzado')))
+  and t.run('coach1', format($q$select public.editar_ejercicio(%L, '{"titulo":"Cruzado y paralelo","pasos":["Cruzado","Paralelo"],"material":["pelotas"],"nivel":"medio","objetivo":"derecha","espacio":"media"}'::jsonb)$q$, t.ej('Cruzado'))));
+select t.ok('...y el cambio queda guardado', (select cardinality(pasos) = 2 and material = '{pelotas}' from public.ejercicios where id = t.ej('Cruzado')));
+select t.ok('editar valida pasos y valores', not t.run('coach1', format(
+  $q$select public.editar_ejercicio(%L, '{"titulo":"Cruzado","pasos":["a","b","c","d"]}'::jsonb)$q$, t.ej('Cruzado')))
+  and not t.run('coach1', format($q$select public.editar_ejercicio(%L, '{"titulo":"Cruzado","nivel":"experto"}'::jsonb)$q$, t.ej('Cruzado'))));
+
+-- Ejercicios de una clase (sesión 30…01, grupo de coach1 en A, ayer)
+select t.ok('coach1 prepara la clase con su público y su privado de A', t.run('coach1', format(
+  'select public.guardar_ejercicios_clase(%L, array[%L, %L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('Cruzado'), t.ej('SecretoA'))));
+select t.ok('...queda quién los añadió y en qué orden',
+  (select bool_and(anadido_por = t.u('coach1')) from public.usos_ejercicio where sesion_id = '30000000-0000-0000-0000-000000000001')
+  and (select orden from public.usos_ejercicio where sesion_id = '30000000-0000-0000-0000-000000000001' and ejercicio_id = t.ej('SecretoA')) = 1);
+select t.ok('coach2 no prepara clases de A', not t.run('coach2', format(
+  'select public.guardar_ejercicios_clase(%L, array[%L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('Cruzado'))));
+select t.ok('coach1 no usa el privado de otra escuela', not t.run('coach1', format(
+  'select public.guardar_ejercicios_clase(%L, array[%L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('SecretoB'))));
+select t.ok('no se repite un ejercicio en la clase', not t.run('coach1', format(
+  'select public.guardar_ejercicios_clase(%L, array[%L, %L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('Cruzado'), t.ej('Cruzado'))));
+select t.ok('no se escriben usos directamente', not t.run('coach1', format(
+  $q$insert into public.usos_ejercicio (sesion_id, ejercicio_id) values ('30000000-0000-0000-0000-000000000001', %L)$q$, t.ej('Conos'))));
+select t.ok('el uso cuenta: "usado por 1 entrenador"', t.val('coach2', format(
+  'select usado_por::text from public.biblioteca() where id = %L', t.ej('Cruzado'))) = '1');
+select t.ok('la familia del alumno ve los ejercicios de su clase (sin autor) y su detalle',
+  t.cnt('fam1', $q$select 1 from public.ejercicios_de_clase('30000000-0000-0000-0000-000000000001')$q$) = 2
+  and t.run('fam1', format('select public.detalle_ejercicio(%L)', t.ej('SecretoA'))));
+select t.ok('otra familia no ve los ejercicios de esa clase', not t.run('fam2',
+  $q$select * from public.ejercicios_de_clase('30000000-0000-0000-0000-000000000001')$q$));
+select t.ok('no se borra un ejercicio usado o con variantes', not t.run('coach1', format('select public.borrar_ejercicio(%L)', t.ej('Cruzado'))));
+select t.ok('solo el autor borra; uno sin usar sí se borra',
+  not t.run('coach1', format('select public.borrar_ejercicio(%L)', t.ej('Conos')))
+  and t.run('coach2', format('select public.borrar_ejercicio(%L)', t.ej('Conos'))));
+select t.ok('...y desaparece con sus imágenes', not exists (select 1 from public.ejercicios where id = t.ej('Conos'))
+  and not exists (select 1 from public.ejercicio_imagenes where ejercicio_id = t.ej('Conos')));
+select t.ok('coach1 retira su ejercicio: desaparece de la biblioteca pero sigue en la clase',
+  t.run('coach1', format('select public.retirar_ejercicio(%L)', t.ej('Cruzado')))
+  and t.cnt('coach2', format('select 1 from public.biblioteca() where id = %L', t.ej('Cruzado'))) = 0
+  and t.cnt('coach1', $q$select 1 from public.ejercicios_de_clase('30000000-0000-0000-0000-000000000001') where retirado$q$) = 1);
+select t.ok('uno retirado se conserva en la clase, pero no se vuelve a añadir',
+  t.run('coach1', format('select public.guardar_ejercicios_clase(%L, array[%L, %L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('SecretoA'), t.ej('Cruzado')))
+  and t.run('coach1', format('select public.guardar_ejercicios_clase(%L, array[%L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('SecretoA')))
+  and not t.run('coach1', format('select public.guardar_ejercicios_clase(%L, array[%L, %L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('SecretoA'), t.ej('Cruzado'))));
+select t.ok('solo el autor lo retira, y lo puede devolver a la biblioteca',
+  not t.run('coach2', format('select public.retirar_ejercicio(%L, false)', t.ej('Cruzado')))
+  and t.run('coach1', format('select public.retirar_ejercicio(%L, false)', t.ej('Cruzado')))
+  and t.run('coach1', format('select public.guardar_ejercicios_clase(%L, array[%L, %L]::uuid[])', '30000000-0000-0000-0000-000000000001', t.ej('Cruzado'), t.ej('SecretoA'))));
 
 -- ---------------- Funciones de sistema ----------------
 select t.ok('anónimo no ejecuta crear_escuela', (
@@ -526,9 +651,6 @@ select t.ok('no se confirma una clase cancelada', not t.run('fam1',
 select t.ok('ninguna de esas dio puntos', (select count(*) from public.puntos) = 1);
 
 -- Ejercicios y longitudes
-select t.ok('no se asocia un ejercicio público a una escuela ajena', not t.run('coach1', format(
-  $q$insert into public.ejercicios (autor_id, escuela_id, titulo, jugadores_min, jugadores_max) values (%L,%L,'Ajeno',1,2)$q$,
-  t.u('coach1'), (select id from cod where esc='B'))));
 select t.ok('nombre demasiado largo rechazado', t.rows('fam1',
   format($q$update public.personas set nombre = repeat('x', 200) where id=%L$q$, t.u('fam1'))) = -1);
 select t.ok('el nombre del registro se recorta a 80', (select length(nombre) from public.personas where id = t.u('dir1')) <= 80);
@@ -673,6 +795,18 @@ select t.ok('dir2 crea un grupo con coach2 (clase el día de la semana de ayer)'
   $q$insert into public.grupos (id, escuela_id, nombre, dia, hora, entrenador_id, pista) values ('70000000-0000-0000-0000-000000000001',%L,'Grupo B',%s,'17:00',%L,'Pista 2')$q$,
   (select id from cod where esc='B'), extract(isodow from current_date - 1)::int, t.u('coach2'))));
 update public.grupos set creado_at = now() - interval '200 days' where id = '70000000-0000-0000-0000-000000000001';
+
+-- Ejercicios privados entre escuelas: dir2 (director de B) es también entrenador en A
+insert into public.membresias (persona_id, escuela_id, rol, estado) values (t.u('dir2'), (select id from cod where esc='A'), 'entrenador', 'activa');
+select t.ok('quien está en dos escuelas no usa el ejercicio privado de A en una clase de B', not t.run('dir2', format(
+  $q$select public.guardar_ejercicios_clase(public.sesion_para('70000000-0000-0000-0000-000000000001', %L), array[%L]::uuid[])$q$,
+  current_date - 1, t.ej('SecretoA'))));
+select t.ok('...aunque sí lo ve (es de su otra escuela) y sí usa uno público', t.run('dir2', format('select public.detalle_ejercicio(%L)', t.ej('SecretoA')))
+  and t.run('dir2', format($q$select public.guardar_ejercicios_clase(public.sesion_para('70000000-0000-0000-0000-000000000001', %L), array[%L]::uuid[])$q$,
+  current_date - 1, t.ej('Cruzado'))));
+select t.ok('...y su uso cuenta (el de coach1 ya no: borró su cuenta y su uso quedó anónimo)', t.val('coach2', format(
+  'select usado_por::text from public.biblioteca() where id = %L', t.ej('Cruzado'))) = '1');
+delete from public.membresias where persona_id = t.u('dir2') and escuela_id = (select id from cod where esc='A');
 
 -- Alta de alumno por la escuela
 create temp table alta (j jsonb);

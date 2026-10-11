@@ -88,3 +88,13 @@ Para ver todos: `select id, nombre, precio_xp from public.avatares order by orde
 - **Alumnos de la escuela.** El director da de alta alumnos sin cuenta familiar (`alta_alumno`). Cada uno tiene un código de 8 caracteres que solo ve el director (`codigo_alumno`). La familia lo introduce (`vincular_alumno`) y da su consentimiento; hasta entonces no gana XP.
 - **Códigos.** Máximo 10 intentos fallidos por hora y persona (de escuela y de alumno).
 - **Escrituras cerradas.** Sesiones, asistencias, inscripciones y membresías ya no se escriben directamente: solo con las funciones anteriores, `inscribir`/`desinscribir`, `resolver_membresia` y `dejar_escuela`.
+
+## Biblioteca de ejercicios (0007)
+
+- **Dibujo como datos.** Cada imagen es una lista de elementos sobre la pista (240 × 140): `jugador`, `pelota` y `cono` con `x`, `y`; y `trayecto` con `de`, `a`, opcionalmente `c` (curva) y `tipo` (`bola` o `carrera`). Entre 1 y 40 elementos por imagen y de 1 a 5 imágenes. Se valida en la base de datos: no se guarda nada más (ni SVG ni texto libre).
+- **Duplicados.** Cada ejercicio guarda una huella de su dibujo. `buscar_parecidos` compara un dibujo nuevo con los públicos, también en espejo, junto con jugadores y edad (70 % dibujo, 15 % jugadores, 15 % edad). A partir del 75 % se avisa. A partir del 90 % `publicar_ejercicio` no deja publicarlo, salvo como variante (`original_id`). Las variantes cuelgan siempre del original y sus usos suman al original.
+- **Anonimato.** `biblioteca()` (con filtros) y `detalle_ejercicio()` nunca devuelven el autor ni la escuela: solo `es_mio`. Un ejercicio público no guarda escuela.
+- **Solo mi escuela.** Lo ven el staff de esa escuela y no cuenta para el ranking. Solo se usa en clases de esa escuela, aunque el entrenador esté en varias.
+- **Usos.** `guardar_ejercicios_clase` fija los ejercicios (y su orden) de una clase y guarda quién los añadió. "Usado por X entrenadores" cuenta entrenadores distintos en clases no canceladas, contando también las variantes.
+- **Cambios del autor.** `editar_ejercicio` solo cambia textos (nombre, pasos, material, nivel, objetivo, espacio). El dibujo, los jugadores, la edad y la visibilidad no cambian. `retirar_ejercicio` lo quita de la biblioteca, pero las clases que lo usaron lo conservan. `borrar_ejercicio` solo funciona si nadie lo ha usado y no tiene variantes.
+- **Escrituras cerradas.** Ejercicios, imágenes y usos solo se escriben con estas funciones. Límite: 20 ejercicios al día por persona.
