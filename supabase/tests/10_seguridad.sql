@@ -11,7 +11,8 @@ create function t.u(n text) returns uuid language sql immutable as $$
   select ('00000000-0000-0000-0000-' || lpad(to_hex(
     case n when 'dir1' then 1 when 'dir2' then 2 when 'coach1' then 3 when 'coach2' then 4
       when 'coach3' then 5 when 'fam1' then 6 when 'fam2' then 7 when 'out' then 8
-      when 'founder' then 9 end), 12, '0'))::uuid $$;
+      when 'founder' then 9 when 'rdir' then 16 when 'rc1' then 17 when 'rc2' then 18 when 'rc3' then 19
+      when 'rfam' then 20 when 'rfam2' then 21 when 'rout' then 22 end), 12, '0'))::uuid $$;
 
 -- Ejecuta sql como usuario autenticado (o 'anon') y devuelve el nº de filas del resultado
 create function t.cnt(usr text, q text) returns bigint language plpgsql as $$
@@ -911,6 +912,183 @@ select t.ok('el director archiva el grupo', t.rows('dir2',
 select t.ok('...y en un grupo archivado no se crean clases futuras ni se inscribe', not t.run('dir2', format(
   $q$select public.sesion_para('70000000-0000-0000-0000-000000000001', %L)$q$, current_date + 6))
   and not t.run('dir2', format($q$select public.inscribir(%L, '70000000-0000-0000-0000-000000000001')$q$, '10000000-0000-0000-0000-000000000002')));
+
+-- ---------------- Rankings (0008) ----------------
+-- Escenario propio: temporada desde hace 100 días; 5 escuelas (E1-E3 en Huelva, E4 en
+-- Sevilla, E5 en Huelva pero sin participar). Mínimo de participantes por escuela: 2.
+create or replace function privado.inicio_temporada() returns date language sql stable set search_path = '' as $$ select current_date - 100 $$;
+create or replace function privado.minimo_participantes_escuela() returns integer language sql immutable as $$ select 2 $$;
+insert into auth.users (id, raw_user_meta_data) select t.u(n), jsonb_build_object('nombre', x) from (values
+  ('rdir', 'Rosa Directora'), ('rc1', 'Lucía Martín'), ('rc2', 'Javier Costa'), ('rc3', 'Elena Pinar'),
+  ('rfam', 'Familia R'), ('rfam2', 'Familia R2'), ('rout', 'Sin escuela')) v(n, x);
+insert into public.escuelas (id, nombre, ciudad, provincia, comunidad, codigo, creada_por, participa_ranking) values
+  ('e1000000-0000-0000-0000-000000000001', 'Marismas', 'Huelva', 'Huelva', 'Andalucía', 'RKA-AA2', t.u('rdir'), true),
+  ('e1000000-0000-0000-0000-000000000002', 'Costa', 'Punta Umbría', ' huelva', 'Andalucía', 'RKA-AA3', t.u('rdir'), true),
+  ('e1000000-0000-0000-0000-000000000003', 'Dunas', 'Matalascañas', 'Huelva', 'Andalucía', 'RKA-AA4', t.u('rdir'), true),
+  ('e1000000-0000-0000-0000-000000000004', 'Giralda', 'Sevilla', 'Sevilla', 'Andalucía', 'RKA-AA5', t.u('rdir'), true),
+  ('e1000000-0000-0000-0000-000000000005', 'Fuera', 'Lepe', 'Huelva', 'Andalucía', 'RKA-AA6', t.u('rdir'), false);
+insert into public.membresias (persona_id, escuela_id, rol, estado) values
+  (t.u('rdir'), 'e1000000-0000-0000-0000-000000000001', 'director', 'activa'),
+  (t.u('rc1'), 'e1000000-0000-0000-0000-000000000001', 'entrenador', 'activa'),
+  (t.u('rc2'), 'e1000000-0000-0000-0000-000000000002', 'entrenador', 'activa'),
+  (t.u('rc3'), 'e1000000-0000-0000-0000-000000000003', 'entrenador', 'activa');
+create function t.ralumno(p_id uuid, p_fam text, p_nombre text, p_apellidos text, p_edad int, p_escuelas uuid[]) returns void language sql as $$
+  insert into public.perfiles_alumno (id, familia_id, nombre, apellidos, anio_nacimiento, nivel, consentimiento_at)
+  values (p_id, t.u(p_fam), p_nombre, p_apellidos, extract(year from current_date)::int - p_edad, (case when p_edad <= 7 then 'mini' else 'gamer' end)::public.nivel_alumno, now());
+  insert into public.membresias (persona_id, perfil_id, escuela_id, rol, estado)
+  select t.u(p_fam), p_id, e, 'alumno', 'activa' from unnest(p_escuelas) e;
+$$;
+select t.ralumno('a1000000-0000-0000-0000-000000000001', 'rfam', 'Iker', 'López Mora', 10, array['e1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000002']::uuid[]);
+select t.ralumno('a1000000-0000-0000-0000-000000000002', 'rfam', 'Noa', 'Ruiz', 12, array['e1000000-0000-0000-0000-000000000001']::uuid[]);
+select t.ralumno('a1000000-0000-0000-0000-000000000003', 'rfam', 'Peque', '', 6, array['e1000000-0000-0000-0000-000000000001']::uuid[]);
+select t.ralumno('a1000000-0000-0000-0000-000000000004', 'rfam2', 'Alma Sofía', '', 11, array['e1000000-0000-0000-0000-000000000002']::uuid[]);
+select t.ralumno('a1000000-0000-0000-0000-000000000005', 'rfam2', 'Carla', 'Vidal', 13, array['e1000000-0000-0000-0000-000000000005']::uuid[]);
+update public.perfiles_alumno set participa_ranking = false where id = 'a1000000-0000-0000-0000-000000000002'; -- Noa no quiere salir
+
+-- Grupos (todos con clase el mismo día de la semana que hace 7 días)
+insert into public.grupos (id, escuela_id, nombre, dia, hora, entrenador_id, creado_at) values
+  ('b1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000001', 'G1', extract(isodow from current_date - 7)::int, '17:00', t.u('rc1'), (current_date - 22)::timestamp + interval '12 hours'),
+  ('b1000000-0000-0000-0000-000000000002', 'e1000000-0000-0000-0000-000000000002', 'G2', extract(isodow from current_date - 7)::int, '17:00', t.u('rc2'), now() - interval '200 days'),
+  ('b1000000-0000-0000-0000-000000000003', 'e1000000-0000-0000-0000-000000000003', 'G3', extract(isodow from current_date - 7)::int, '17:00', t.u('rc3'), now() - interval '200 days'),
+  ('b1000000-0000-0000-0000-000000000004', 'e1000000-0000-0000-0000-000000000001', 'G4', extract(isodow from current_date - 7)::int, '19:00', null, now() - interval '200 days'),
+  ('b1000000-0000-0000-0000-000000000005', 'e1000000-0000-0000-0000-000000000005', 'G5', extract(isodow from current_date - 7)::int, '17:00', null, now() - interval '200 days');
+insert into public.inscripciones (perfil_id, grupo_id, desde) values
+  ('a1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', current_date - 30),
+  ('a1000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000001', current_date - 30),
+  ('a1000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000001', current_date - 30),
+  ('a1000000-0000-0000-0000-000000000004', 'b1000000-0000-0000-0000-000000000002', current_date - 60),
+  ('a1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000004', current_date - 60),
+  ('a1000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000004', current_date - 60),
+  ('a1000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000004', current_date - 60);
+-- G1 (rc1): tocaban -21, -14 y -7. -21 y -14 con lista; -7 cancelada.
+do $$ begin
+  perform t.clase('b1000000-0000-0000-0000-000000000001', 21), t.clase('b1000000-0000-0000-0000-000000000001', 14),
+          t.clase('b1000000-0000-0000-0000-000000000001', 7, 'cancelada'), t.clase('b1000000-0000-0000-0000-000000000001', 150);
+end $$;
+create function t.rses(g text, d int) returns uuid language sql stable as $$
+  select id from public.sesiones where grupo_id = ('b1000000-0000-0000-0000-00000000000' || g)::uuid and fecha = current_date - d $$;
+-- Asistencias de G1 marcadas por rc1: en -21 Iker y Noa confirmadas, Peque sin confirmar; en -14 Iker confirmada, Noa justificada
+insert into public.asistencias (sesion_id, perfil_id, marcada_por, justificada, confirmada_por, confirmada_at) values
+  (t.rses('1', 21), 'a1000000-0000-0000-0000-000000000001', t.u('rc1'), false, t.u('rfam'), now()),
+  (t.rses('1', 21), 'a1000000-0000-0000-0000-000000000002', t.u('rc1'), false, t.u('rfam'), now()),
+  (t.rses('1', 21), 'a1000000-0000-0000-0000-000000000003', t.u('rc1'), false, null, null),
+  (t.rses('1', 14), 'a1000000-0000-0000-0000-000000000001', t.u('rc1'), false, t.u('rfam'), now()),
+  (t.rses('1', 14), 'a1000000-0000-0000-0000-000000000002', t.u('rc1'), true, null, null);
+-- G2 (rc2): 7 clases con lista; G3 (rc3): 1 con lista y 1 planificada; G5 (escuela que no participa): 1
+do $$ begin
+  perform t.clase('b1000000-0000-0000-0000-000000000002', 7 * k) from generate_series(1, 7) k;
+  perform t.clase('b1000000-0000-0000-0000-000000000003', 14), t.clase('b1000000-0000-0000-0000-000000000003', 7, 'planificada');
+  perform t.clase('b1000000-0000-0000-0000-000000000005', 14);
+end $$;
+-- Puntos: Iker 300 + 300 en E1 y 100 en E2 (y 1000 de antes de la temporada); Noa y Peque 300; Alma 450; Carla 999 en E5
+insert into public.puntos (perfil_id, escuela_id, sesion_id, valor) values
+  ('a1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000001', t.rses('1', 21), 300),
+  ('a1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000001', t.rses('1', 14), 300),
+  ('a1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000001', t.rses('1', 150), 1000),
+  ('a1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000002', t.rses('2', 14), 100),
+  ('a1000000-0000-0000-0000-000000000002', 'e1000000-0000-0000-0000-000000000001', t.rses('1', 21), 300),
+  ('a1000000-0000-0000-0000-000000000003', 'e1000000-0000-0000-0000-000000000001', t.rses('1', 21), 300),
+  ('a1000000-0000-0000-0000-000000000004', 'e1000000-0000-0000-0000-000000000002', t.rses('2', 14), 450),
+  ('a1000000-0000-0000-0000-000000000005', 'e1000000-0000-0000-0000-000000000005', t.rses('5', 14), 999);
+-- Ejercicios: uno público de rc1 (X1), una variante de rc3 (XV) y uno privado de rc1 (XP)
+insert into public.ejercicios (id, autor_id, escuela_id, visibilidad, titulo, jugadores_min, jugadores_max, original_id) values
+  ('c1000000-0000-0000-0000-000000000001', t.u('rc1'), null, 'publica', 'X1', 2, 4, null),
+  ('c1000000-0000-0000-0000-000000000002', t.u('rc3'), null, 'publica', 'XV', 2, 4, 'c1000000-0000-0000-0000-000000000001'),
+  ('c1000000-0000-0000-0000-000000000003', t.u('rc1'), 'e1000000-0000-0000-0000-000000000001', 'escuela', 'XP', 2, 4, null);
+-- rc2 usa X1 en sus 7 clases (y la variante en la misma clase de -7): 7 usos de otra escuela = 14, tope 10.
+-- rc2 usa el privado: no cuenta. rc1 usa el suyo: no cuenta. rc3 usa la variante en su clase con lista (+2)
+-- y X1 en una clase sin lista (no cuenta).
+insert into public.usos_ejercicio (sesion_id, ejercicio_id, anadido_por)
+select t.rses('2', 7 * k), 'c1000000-0000-0000-0000-000000000001', t.u('rc2') from generate_series(1, 7) k;
+insert into public.usos_ejercicio (sesion_id, ejercicio_id, anadido_por) values
+  (t.rses('2', 7), 'c1000000-0000-0000-0000-000000000002', t.u('rc2')),
+  (t.rses('2', 14), 'c1000000-0000-0000-0000-000000000003', t.u('rc2')),
+  (t.rses('1', 21), 'c1000000-0000-0000-0000-000000000001', t.u('rc1')),
+  (t.rses('3', 14), 'c1000000-0000-0000-0000-000000000002', t.u('rc3')),
+  (t.rses('3', 7), 'c1000000-0000-0000-0000-000000000001', t.u('rc3'));
+
+-- Puntuación de rc1: uso 12 ponderados → 120; constancia 2 de 2 → 1000; alumnos 3 de 5 → 600; total 528
+select t.ok('entrenador: uso con peso doble entre escuelas, tope por pareja, sin propios, privados ni clases sin lista',
+  (t.val('rfam', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb ->> 'uso')::int = 120
+  and (t.val('rfam', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb ->> 'usos')::int = 8);
+select t.ok('entrenador: constancia (las canceladas no cuentan) y asistencia confirmada de sus alumnos (sin justificadas)',
+  (t.val('rfam', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb ->> 'constancia')::int = 1000
+  and (t.val('rfam', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb ->> 'alumnos')::int = 600);
+select t.ok('entrenador: total 40/30/30 = 528, con nombre público y escuelas',
+  (select (d ->> 'puntos')::int = 528 and d ->> 'nombre' = 'Lucía M.' and d -> 'escuelas' = '["Marismas"]'::jsonb and not (d ->> 'es_mio')::boolean
+   from (select t.val('rfam', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb d) x));
+update public.sesiones set estado = 'planificada' where id = t.rses('1', 7);
+select t.ok('entrenador: una clase que tocaba sin lista baja la constancia (2 de 3 → 667)',
+  (t.val('rc1', format('select public.perfil_entrenador(%L)::text', t.u('rc1')))::jsonb ->> 'constancia')::int = 667);
+update public.sesiones set estado = 'cancelada' where id = t.rses('1', 7);
+select t.ok('perfil de entrenador: no lo ve quien no está en ninguna escuela', not t.run('rout', format('select public.perfil_entrenador(%L)', t.u('rc1'))));
+
+-- Ranking de alumnos
+select t.ok('alumnos, mi escuela: solo puntos de la temporada y de esa escuela; sin Mini ni quien no quiere salir',
+  t.cnt('rfam', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001')$q$) = 1
+  and t.val('rfam', $q$select nombre || '|' || puntos || '|' || es_mio || '|' || posicion || '|' || escuela from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001')$q$) = 'Iker L.|600|true|1|Marismas');
+select t.ok('alumnos, provincia: aparece una vez con su total; sin escuelas que no participan ni de otra provincia',
+  t.cnt('rfam2', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'provincia')$q$) = 2
+  and t.val('rfam2', $q$select puntos::text from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'provincia') where nombre = 'Iker L.'$q$) = '700'
+  and t.val('rfam2', $q$select nombre || '|' || es_mio from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'provincia') where posicion = 2$q$) = 'Alma S.|true'
+  and t.val('rfam2', $q$select escuela from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'provincia') where nombre = 'Iker L.'$q$) = 'Marismas');
+select t.ok('alumnos: filtro de edad', t.cnt('rfam2', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'provincia', 11, 13)$q$) = 1);
+select t.ok('alumnos: el ranking no devuelve identificadores ni apellidos', (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public' and p.proname in ('ranking_alumnos', 'ranking_escuelas')
+    and (pg_get_function_result(p.oid) ilike '%perfil%' or pg_get_function_result(p.oid) ilike '%apellido%' or pg_get_function_result(p.oid) ilike '%_id%')) = 0);
+select t.ok('alumnos: quien no es de la escuela no ve su ranking; nadie de fuera ve ninguno',
+  not t.run('rfam2', $q$select * from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001')$q$)
+  and not t.run('rout', $q$select * from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001', 'pais')$q$));
+select t.ok('una escuela que no participa no tiene ranking (ni sus alumnos aparecen)',
+  t.cnt('rfam2', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000005')$q$) = 0
+  and t.cnt('rfam2', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000002', 'pais') where nombre = 'Carla V.'$q$) = 0
+  and (t.val('rfam2', $q$select public.estado_ranking('e1000000-0000-0000-0000-000000000005')::text$q$)::jsonb ->> 'participa')::boolean = false);
+select t.ok('la familia saca a su hijo del ranking', t.rows('rfam',
+  $q$update public.perfiles_alumno set participa_ranking = false where id = 'a1000000-0000-0000-0000-000000000001'$q$) = 1);
+select t.ok('...y desaparece', t.cnt('rfam', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001')$q$) = 0);
+update public.perfiles_alumno set participa_ranking = true where id = 'a1000000-0000-0000-0000-000000000001';
+
+-- Zonas con pocas escuelas
+select t.ok('estado: 3 escuelas en la provincia (sin importar mayúsculas o espacios), 5 en la comunidad (con la B de Sevilla)',
+  (select (d ->> 'escuelas_provincia')::int = 3 and (d ->> 'escuelas_comunidad')::int = 5 and (d ->> 'minimo_escuelas')::int = 3
+   from (select t.val('rdir', $q$select public.estado_ranking('e1000000-0000-0000-0000-000000000001')::text$q$)::jsonb d) x));
+update public.escuelas set participa_ranking = false where id = 'e1000000-0000-0000-0000-000000000003';
+select t.ok('con solo 2 escuelas en la provincia no hay ranking de zona (sí el de la escuela)',
+  t.cnt('rfam', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001', 'provincia')$q$) = 0
+  and t.cnt('rfam', $q$select 1 from public.ranking_entrenadores('e1000000-0000-0000-0000-000000000001', 'provincia')$q$) = 0
+  and t.cnt('rfam', $q$select 1 from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'provincia')$q$) = 0
+  and t.cnt('rfam', $q$select 1 from public.ranking_alumnos('e1000000-0000-0000-0000-000000000001')$q$) = 1);
+update public.escuelas set participa_ranking = true where id = 'e1000000-0000-0000-0000-000000000003';
+
+-- Ranking de entrenadores
+select t.ok('entrenadores, provincia: ordenados por puntos, una vez cada uno, y el propio marcado',
+  t.cnt('rc2', $q$select 1 from public.ranking_entrenadores('e1000000-0000-0000-0000-000000000002', 'provincia')$q$) = 3
+  and t.val('rc2', $q$select nombre || '|' || puntos || '|' || escuela from public.ranking_entrenadores('e1000000-0000-0000-0000-000000000002', 'provincia') where posicion = 1$q$) = 'Lucía M.|528|Marismas'
+  and t.val('rc2', $q$select posicion::text from public.ranking_entrenadores('e1000000-0000-0000-0000-000000000002', 'provincia') where es_mio$q$) = '2');
+select t.ok('entrenadores, mi escuela', t.cnt('rfam', $q$select 1 from public.ranking_entrenadores('e1000000-0000-0000-0000-000000000001')$q$) = 1);
+
+-- Ranking de escuelas: media de entrenadores y alumnos; E3 (1 participante) no llega al mínimo
+select t.ok('escuelas, provincia: solo las que llegan al mínimo, con su media y la mía marcada',
+  t.cnt('rdir', $q$select 1 from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'provincia')$q$) = 2
+  and t.val('rdir', $q$select nombre || '|' || puntos || '|' || es_mia from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'provincia') where posicion = 1$q$) = 'Marismas|764|true'
+  and t.val('rdir', $q$select nombre || '|' || puntos || '|' || es_mia from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'provincia') where posicion = 2$q$) = 'Costa|494|false');
+select t.ok('...una familia con hijos en dos escuelas ve marcadas las dos', t.cnt('rfam',
+  $q$select 1 from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'provincia') where es_mia$q$) = 2);
+select t.ok('escuelas: no hay ranking "de mi escuela"', not t.run('rfam', $q$select * from public.ranking_escuelas('e1000000-0000-0000-0000-000000000001', 'escuela')$q$));
+
+-- Patrones raros (G4: 3 alumnos presentes en sus 6 últimas clases, marcadas por rc1 y sin confirmar)
+insert into public.asistencias (sesion_id, perfil_id, marcada_por)
+select t.clase('b1000000-0000-0000-0000-000000000004', 7 * k), p, t.u('rc1')
+from generate_series(1, 6) k, unnest(array['a1000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000003']::uuid[]) p;
+select t.ok('anomalías: el director ve el grupo siempre completo y al entrenador cuyas listas no confirman las familias',
+  t.cnt('rdir', $q$select 1 from public.anomalias('e1000000-0000-0000-0000-000000000001') where tipo = 'siempre_completo' and grupo = 'G4'$q$) = 1
+  and t.cnt('rdir', $q$select 1 from public.anomalias('e1000000-0000-0000-0000-000000000001') where tipo = 'sin_confirmar' and entrenador = 'Lucía M.'$q$) = 1);
+select t.ok('anomalías: G1 no sale (no siempre completo)', t.cnt('rdir', $q$select 1 from public.anomalias('e1000000-0000-0000-0000-000000000001') where grupo = 'G1'$q$) = 0);
+select t.ok('anomalías: solo el director (ni entrenadores ni familias)',
+  not t.run('rc1', $q$select * from public.anomalias('e1000000-0000-0000-0000-000000000001')$q$)
+  and not t.run('rfam', $q$select * from public.anomalias('e1000000-0000-0000-0000-000000000001')$q$));
+select t.ok('anónimo: no ejecuta ninguna función de ranking', not has_function_privilege('anon', 'public.ranking_alumnos(uuid,text,integer,integer)', 'execute')
+  and not has_function_privilege('anon', 'public.anomalias(uuid)', 'execute'));
 
 select case when bool_and(ok) then 'TODAS LAS PRUEBAS PASAN (' || count(*) || ')'
        else 'HAY FALLOS' end as resultado from t.res;

@@ -98,3 +98,17 @@ Para ver todos: `select id, nombre, precio_xp from public.avatares order by orde
 - **Usos.** `guardar_ejercicios_clase` fija los ejercicios (y su orden) de una clase y guarda quién los añadió. "Usado por X entrenadores" cuenta entrenadores distintos en clases no canceladas, contando también las variantes.
 - **Cambios del autor.** `editar_ejercicio` solo cambia textos (nombre, pasos, material, nivel, objetivo, espacio). El dibujo, los jugadores, la edad y la visibilidad no cambian. `retirar_ejercicio` lo quita de la biblioteca, pero las clases que lo usaron lo conservan. `borrar_ejercicio` solo funciona si nadie lo ha usado y no tiene variantes.
 - **Escrituras cerradas.** Ejercicios, imágenes y usos solo se escriben con estas funciones. Límite: 20 ejercicios al día por persona.
+
+## Rankings (0008)
+
+No hay tablas nuevas: los rankings se calculan al consultarlos, así que se actualizan tras cada lista. Los valores se ajustan en las funciones del principio de la migración.
+
+- **Temporada** (`inicio_temporada`): desde el 1 de septiembre. Lo anterior no cuenta.
+- **Alumnos** (`ranking_alumnos`): desde 8 años (`edad_minima_ranking`), si la familia no lo ha desactivado (`perfiles_alumno.participa_ranking`) y su escuela participa. Puntos = XP de la temporada. En "mi escuela", solo el de esa escuela; en provincia, comunidad y país, el total, apareciendo una sola vez. Solo se muestra nombre de pila con inicial ("Iker L."), avatar, escuela y puntos. Filtro por edad.
+- **Entrenadores** (`ranking_entrenadores`, `perfil_entrenador`): nota de 0 a 1000.
+  - 40 % uso: sus ejercicios públicos (con sus variantes) dados por otros entrenadores en clases con lista. Valen doble si son de otra escuela, con un tope de 10 por pareja de entrenadores (`tope_usos_pareja`) y 10 puntos por uso.
+  - 30 % constancia: clases que tocaban según el horario, sin las canceladas, en las que se pasó lista.
+  - 30 % alumnos: asistencias confirmadas por las familias frente a los alumnos apuntados (sin faltas justificadas), en clases de hace al menos 7 días.
+- **Escuelas** (`ranking_escuelas`): media de 0 a 1000 de sus entrenadores y sus alumnos. Para cada alumno, su XP de la temporada en la escuela frente a 300 por semana. Hace falta un mínimo de 5 participantes (`minimo_participantes_escuela`) y no se muestra cuántos son.
+- **Zonas**: provincia y comunidad se comparan sin distinguir mayúsculas ni espacios; hacen falta al menos 3 escuelas participando (`minimo_escuelas_zona`). Los rankings se piden siempre desde una escuela de la que se es miembro aprobado (`estado_ranking` dice si participa, su zona y cuántas escuelas hay). **La provincia y la comunidad de cada escuela las pone el director**: sin ellas, solo hay ranking de la escuela y del país.
+- **Patrones raros** (`anomalias`, solo el director): grupos con todos los alumnos presentes en sus 6 últimas clases, y entrenadores con al menos 10 asistencias marcadas de las que las familias confirman menos del 30 %.
