@@ -23,6 +23,7 @@ export default function EscuelaTabs() {
     >
       <Tabs.Screen name="index" options={{ title: 'Hoy', tabBarIcon: icono('home') }} />
       <Tabs.Screen name="horario" options={{ title: 'Horario', tabBarIcon: icono('calendar') }} />
+      <Tabs.Screen name="biblioteca" options={{ title: 'Biblioteca', tabBarIcon: icono('list') }} />
       <Tabs.Screen name="personas" options={{ title: 'Personas', tabBarIcon: icono('coach'), href: esDirector ? undefined : null }} />
       <Tabs.Screen name="panel" options={{ title: 'Escuela', tabBarIcon: icono('school') }} />
     </Tabs>

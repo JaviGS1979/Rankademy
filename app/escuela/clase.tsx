@@ -1,14 +1,17 @@
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Aviso, Button, Card, Cargando, Chip, Screen, Tag } from '@/components';
-import { cancelarClase, cancelarDia, gruposDeEscuela, reactivarClase, sesionesDelDia } from '@/lib/api';
+import {
+  cancelarClase, cancelarDia, ejerciciosDeClase, gruposDeEscuela, reactivarClase, sesionPara, sesionesDelDia,
+} from '@/lib/api';
+import { Pista } from '@/features/biblioteca/Pista';
 import { avisar, confirmar } from '@/lib/avisar';
 import { useEscuela } from '@/lib/escuela';
 import { mensajeError } from '@/lib/errores';
 import { etiquetaFecha, hoyISO, horaCorta, nombreDia, ocurrenciasDelGrupo } from '@/lib/fechas';
-import type { GrupoEscuela, SesionDia } from '@/lib/tipos';
+import type { EjercicioClase, GrupoEscuela, SesionDia } from '@/lib/tipos';
 import { colors, fonts, type as t } from '@/theme';
 
 // Preparar clase: elegir el día, ver su estado y cancelarla o reactivarla.
@@ -20,6 +23,7 @@ export default function Clase() {
   const [fecha, setFecha] = useState(params.fecha ?? hoyISO());
   const [grupo, setGrupo] = useState<GrupoEscuela | null | undefined>(undefined);
   const [sesion, setSesion] = useState<SesionDia | null>(null);
+  const [ejercicios, setEjercicios] = useState<EjercicioClase[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [trabajando, setTrabajando] = useState(false);
   const escuelaId = actual?.id;
@@ -30,7 +34,9 @@ export default function Clase() {
       const grupos = await gruposDeEscuela(escuelaId);
       const g = grupos.find((x) => x.id === params.grupo) ?? null;
       setGrupo(g);
-      setSesion(g ? ((await sesionesDelDia([g.id], fecha))[0] ?? null) : null);
+      const ses = g ? ((await sesionesDelDia([g.id], fecha))[0] ?? null) : null;
+      setSesion(ses);
+      setEjercicios(ses ? await ejerciciosDeClase(ses.id) : []);
       setError(null);
     } catch (e) {
       setError(mensajeError(e));
@@ -147,9 +153,40 @@ export default function Clase() {
 
       <Card>
         <Text style={t.h3}>Ejercicios de la clase</Text>
-        <Text style={styles.mut}>
-          Aquí podrás elegir los ejercicios de la biblioteca para esta clase. Llegan en una próxima versión.
-        </Text>
+        {ejercicios.length === 0 && <Text style={styles.mut}>Aún no hay ejercicios elegidos para esta clase.</Text>}
+        {ejercicios.map((e, i) => (
+          <Pressable
+            key={e.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${i + 1}. ${e.titulo}`}
+            onPress={() => router.push({ pathname: '/escuela/ejercicio', params: { id: e.id } })}
+            style={styles.ejercicio}
+          >
+            <View style={styles.miniPista}>
+              <Pista elementos={e.dibujo ?? []} miniatura style={{ borderRadius: 8 }} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ejTitulo}>{e.titulo}</Text>
+              <Text style={styles.mut}>{e.jugadores_min}-{e.jugadores_max} jugadores{e.retirado ? ' · retirado' : ''}</Text>
+            </View>
+            <Text style={styles.ejNum}>{i + 1}</Text>
+          </Pressable>
+        ))}
+        {!cancelada && (
+          <Button
+            label={ejercicios.length ? 'Cambiar ejercicios' : 'Añadir de la biblioteca'}
+            variant="dark"
+            small
+            cargando={trabajando}
+            onPress={() =>
+              accion(async () => {
+                const id = sesion?.id ?? (await sesionPara(grupo.id, fecha));
+                router.push({ pathname: '/escuela/elegir-ejercicios', params: { sesion: id } });
+              })
+            }
+          />
+        )}
+        <Text style={styles.mut}>Los alumnos del grupo verán estos ejercicios en su perfil.</Text>
       </Card>
     </Screen>
   );
@@ -159,4 +196,8 @@ const styles = StyleSheet.create({
   fila: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   estado: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   mut: { fontFamily: fonts.body, fontSize: 14, color: colors.ink2 },
+  ejercicio: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 60 },
+  miniPista: { width: 84 },
+  ejTitulo: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.ink },
+  ejNum: { fontFamily: fonts.display, fontSize: 28, color: colors.ink2 },
 });

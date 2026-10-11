@@ -31,5 +31,6 @@ Copia `.env.example` a `.env` con la URL y la clave pública de Supabase. La bas
 - Fase 3: registro e inicio de sesión con código por correo, crear escuela, unirse con código, añadir hijo, Mis escuelas y aprobación de solicitudes.
 - Fase 5a: base de datos de director y entrenador (horario, pasar lista, alumnos de la escuela con código para la familia).
 - Fase 5b: pantallas del director y del entrenador: Hoy, Horario, grupos, pasar lista, preparar clase (cancelar y reactivar), Personas, inscribir alumno con código y vincular alumno desde la familia. Los ejercicios de la clase llegan con la biblioteca (Fase 6).
+- Fase 6b: pantallas de la biblioteca: cuadrícula con búsqueda y filtros, detalle con imágenes y pasos, editor para dibujar sobre la pista, aviso de ejercicio parecido (usar el existente o publicar como variante), mis ejercicios, ejercicios de cada clase, modo pista (pantalla siempre encendida y copia sin conexión) y los ejercicios de la clase en el perfil del alumno.
 - Fase 6a: base de datos de la biblioteca (dibujo validado, duplicados en espejo, variantes, biblioteca anónima con filtros, ejercicios de cada clase).
 - Fase 4: selector de perfil, inicio Mini y Gamer, confirmar asistencia, resumen tras la clase, progreso, avatares y ejercicios de la clase.

@@ -32,6 +32,7 @@ export default function AlumnoLayout() {
       <Tabs.Screen name="ranking" options={{ title: 'Ranking', tabBarIcon: icono('trophy') }} />
       <Tabs.Screen name="ejercicios" options={{ title: 'Ejercicios', tabBarIcon: icono('list') }} />
       <Tabs.Screen name="avatares" options={{ href: null }} />
+      <Tabs.Screen name="ejercicio" options={{ href: null }} />
     </Tabs>
   );
 }

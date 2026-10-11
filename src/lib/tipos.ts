@@ -76,13 +76,86 @@ export type ResultadoConfirmacion = {
 
 export type Avatar = { id: string; orden: number; nombre: string; precio_xp: number };
 
+// ---------- Biblioteca de ejercicios ----------
+// Elementos del dibujo sobre la pista (viewBox 240 × 140). Mismo formato que valida la base de datos.
+export type Punto = [number, number];
+export type Elemento =
+  | { t: 'jugador' | 'pelota' | 'cono'; x: number; y: number }
+  | { t: 'trayecto'; de: Punto; a: Punto; c?: Punto; tipo?: 'bola' | 'carrera' };
+
+export type Nivel_ej = 'inicio' | 'medio' | 'avanzado';
+export type Objetivo = 'calentar' | 'derecha' | 'reves' | 'saque' | 'volea' | 'pies';
+export type Espacio = 'pista' | 'media' | 'mini';
+export type Material = 'pelotas' | 'conos' | 'aros' | 'red';
+
+// Fila de la biblioteca (nunca incluye autor ni escuela)
+export type ResumenEjercicio = {
+  id: string;
+  titulo: string;
+  visibilidad: 'publica' | 'escuela';
+  original_id: string | null;
+  jugadores_min: number;
+  jugadores_max: number;
+  edad_min: number | null;
+  edad_max: number | null;
+  nivel: Nivel_ej | null;
+  objetivo: Objetivo | null;
+  espacio: Espacio | null;
+  material: Material[];
+  imagenes: number;
+  variantes: number;
+  usado_por: number;
+  es_mio: boolean;
+  retirado: boolean;
+  dibujo: Elemento[] | null; // primera imagen
+  creado_at: string;
+};
+
+export type DetalleEjercicio = {
+  id: string;
+  titulo: string;
+  visibilidad: 'publica' | 'escuela';
+  jugadores_min: number;
+  jugadores_max: number;
+  edad_min: number | null;
+  edad_max: number | null;
+  nivel: Nivel_ej | null;
+  objetivo: Objetivo | null;
+  espacio: Espacio | null;
+  material: Material[];
+  pasos: string[];
+  es_mio: boolean;
+  retirado: boolean;
+  usado_por: number;
+  imagenes: Elemento[][];
+  original: { id: string; titulo: string } | null;
+  variantes: { id: string; titulo: string }[];
+};
+
+export type Parecido = {
+  id: string;
+  titulo: string;
+  parecido: number; // 0-100
+  jugadores_min: number;
+  jugadores_max: number;
+  edad_min: number | null;
+  edad_max: number | null;
+  imagenes: number;
+  variantes: number;
+  usado_por: number;
+  dibujo: Elemento[] | null;
+};
+
+// Ejercicio de una clase concreta
 export type EjercicioClase = {
   id: string;
   titulo: string;
+  orden: number;
   jugadores_min: number;
   jugadores_max: number;
-  autor: { nombre: string } | null;
   imagenes: number;
+  dibujo: Elemento[] | null;
+  retirado: boolean;
 };
 
 export type ClaseConEjercicios = {

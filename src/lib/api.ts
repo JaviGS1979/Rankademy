@@ -1,9 +1,9 @@
 import { supabase } from './supabase';
 import { hoyISO } from './fechas';
 import type {
-  AlumnoEscuela, Avatar, ClaseConEjercicios, EntrenadorEscuela, Escuela, EscuelaStaff, EstadoEscuelaPerfil,
-  FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
-  Rol, RolStaff, SesionDia, Solicitud,
+  AlumnoEscuela, Avatar, ClaseConEjercicios, DetalleEjercicio, EjercicioClase, Elemento, EntrenadorEscuela, Escuela,
+  EscuelaStaff, EstadoEscuelaPerfil, FilaLista, GrupoAlumno, GrupoEscuela, MiMembresia, Nivel, Pendiente, Perfil, Progreso, ResultadoConfirmacion,
+  Parecido, ResumenEjercicio, Rol, RolStaff, SesionDia, Solicitud,
 } from './tipos';
 
 function ok<T>(r: { data: T; error: unknown }): T {
@@ -214,33 +214,16 @@ export async function ejerciciosDeLaClase(perfilId: string): Promise<ClaseConEje
   const data = ok(
     await supabase
       .from('sesiones')
-      .select(
-        `id, fecha, grupo:grupos(nombre, hora),
-         usos:usos_ejercicio(ejercicio:ejercicios(id, titulo, jugadores_min, jugadores_max,
-           autor:personas(nombre), imagenes:ejercicio_imagenes(id)))`,
-      )
+      .select('id, fecha, grupo:grupos(nombre, hora)')
       .in('grupo_id', grupos.map((g) => g.id))
       .neq('estado', 'cancelada')
       .gte('fecha', hoyISO())
       .order('fecha', { ascending: true })
       .limit(1),
-  ) as unknown as {
-    id: string;
-    fecha: string;
-    grupo: { nombre: string; hora: string } | null;
-    usos: { ejercicio: (Omit<ClaseConEjercicios['ejercicios'][number], 'imagenes'> & { imagenes: unknown[] }) | null }[];
-  }[];
+  ) as unknown as { id: string; fecha: string; grupo: { nombre: string; hora: string } | null }[];
   const s = data[0];
   if (!s) return null;
-  return {
-    sesion_id: s.id,
-    fecha: s.fecha,
-    grupo: s.grupo,
-    ejercicios: s.usos
-      .map((u) => u.ejercicio)
-      .filter((e): e is NonNullable<typeof e> => !!e)
-      .map((e) => ({ ...e, imagenes: e.imagenes.length })),
-  };
+  return { sesion_id: s.id, fecha: s.fecha, grupo: s.grupo, ejercicios: await ejerciciosDeClase(s.id) };
 }
 
 // ---------- Familia: vincular un alumno que la escuela ya inscribió ----------
@@ -464,4 +447,137 @@ export async function marcarAsistencia(sesionId: string, perfilId: string, estad
 
 export async function listaDeClase(sesionId: string): Promise<FilaLista[]> {
   return ok(await supabase.rpc('lista_de_clase', { p_sesion: sesionId })) as FilaLista[];
+}
+
+// ---------- Biblioteca de ejercicios ----------
+export type FiltrosBiblioteca = {
+  texto: string;
+  edad: { min: number; max: number } | null;
+  niveles: string[];
+  objetivos: string[];
+  jugMin: number | null;
+  jugMax: number | null;
+  materiales: string[];
+  espacios: string[];
+};
+
+export const sinFiltros: FiltrosBiblioteca = {
+  texto: '', edad: null, niveles: [], objetivos: [], jugMin: null, jugMax: null, materiales: [], espacios: [],
+};
+
+export const hayFiltros = (f: FiltrosBiblioteca) =>
+  !!f.edad || f.niveles.length > 0 || f.objetivos.length > 0 || f.jugMin !== null || f.jugMax !== null ||
+  f.materiales.length > 0 || f.espacios.length > 0;
+
+export async function bibliotecaEjercicios(
+  f: FiltrosBiblioteca,
+  opts: { mios?: boolean; limite?: number; desde?: number } = {},
+): Promise<ResumenEjercicio[]> {
+  return ok(
+    await supabase.rpc('biblioteca', {
+      p_texto: f.texto.trim() || null,
+      p_edad_min: f.edad?.min ?? null,
+      p_edad_max: f.edad?.max ?? null,
+      p_niveles: f.niveles.length ? f.niveles : null,
+      p_objetivos: f.objetivos.length ? f.objetivos : null,
+      p_jug_min: f.jugMin,
+      p_jug_max: f.jugMax,
+      p_materiales: f.materiales.length ? f.materiales : null,
+      p_espacios: f.espacios.length ? f.espacios : null,
+      p_mios: !!opts.mios,
+      p_limite: opts.limite ?? 30,
+      p_desde: opts.desde ?? 0,
+    }),
+  ) as ResumenEjercicio[];
+}
+
+export async function detalleEjercicio(id: string): Promise<DetalleEjercicio> {
+  return ok(await supabase.rpc('detalle_ejercicio', { p_ejercicio: id })) as DetalleEjercicio;
+}
+
+export type DatosEjercicio = {
+  titulo: string;
+  visibilidad: 'publica' | 'escuela';
+  escuelaId: string | null;
+  jugMin: number;
+  jugMax: number;
+  edadMin: number;
+  edadMax: number;
+  nivel: string | null;
+  objetivo: string | null;
+  espacio: string | null;
+  material: string[];
+  pasos: string[];
+  imagenes: Elemento[][];
+  originalId?: string;
+};
+
+export async function buscarParecidos(d: Pick<DatosEjercicio, 'imagenes' | 'jugMin' | 'jugMax' | 'edadMin' | 'edadMax'>): Promise<Parecido[]> {
+  return ok(
+    await supabase.rpc('buscar_parecidos', {
+      p_imagenes: d.imagenes,
+      p_jug_min: d.jugMin,
+      p_jug_max: d.jugMax,
+      p_edad_min: d.edadMin,
+      p_edad_max: d.edadMax,
+    }),
+  ) as Parecido[];
+}
+
+export async function publicarEjercicio(d: DatosEjercicio): Promise<string> {
+  return ok(
+    await supabase.rpc('publicar_ejercicio', {
+      p: {
+        titulo: d.titulo.trim(),
+        visibilidad: d.visibilidad,
+        escuela_id: d.visibilidad === 'escuela' ? d.escuelaId : null,
+        jugadores_min: d.jugMin,
+        jugadores_max: d.jugMax,
+        edad_min: d.edadMin,
+        edad_max: d.edadMax,
+        nivel: d.nivel ?? '',
+        objetivo: d.objetivo ?? '',
+        espacio: d.espacio ?? '',
+        material: d.material,
+        pasos: d.pasos.map((p) => p.trim()).filter(Boolean),
+        imagenes: d.imagenes,
+        original_id: d.originalId ?? null,
+      },
+    }),
+  ) as string;
+}
+
+export async function editarEjercicio(
+  id: string,
+  d: Pick<DatosEjercicio, 'titulo' | 'nivel' | 'objetivo' | 'espacio' | 'material' | 'pasos'>,
+) {
+  ok(
+    await supabase.rpc('editar_ejercicio', {
+      p_ejercicio: id,
+      p: {
+        titulo: d.titulo.trim(),
+        nivel: d.nivel ?? '',
+        objetivo: d.objetivo ?? '',
+        espacio: d.espacio ?? '',
+        material: d.material,
+        pasos: d.pasos.map((p) => p.trim()).filter(Boolean),
+      },
+    }),
+  );
+}
+
+export async function retirarEjercicio(id: string, retirar: boolean) {
+  ok(await supabase.rpc('retirar_ejercicio', { p_ejercicio: id, p_retirar: retirar }));
+}
+
+export async function borrarEjercicio(id: string) {
+  ok(await supabase.rpc('borrar_ejercicio', { p_ejercicio: id }));
+}
+
+export async function ejerciciosDeClase(sesionId: string): Promise<EjercicioClase[]> {
+  return ok(await supabase.rpc('ejercicios_de_clase', { p_sesion: sesionId })) as EjercicioClase[];
+}
+
+export async function guardarEjerciciosClase(sesionId: string, ids: string[]) {
+  ok(await supabase.rpc('guardar_ejercicios_clase', { p_sesion: sesionId, p_ejercicios: ids }));
 }
